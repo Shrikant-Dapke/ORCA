@@ -129,8 +129,22 @@ server/
   ecosystem/pfz.ts        # PFZ extension point (no implementation — no authorized source)
   ecosystem/select.ts     # ORCA_ECOSYSTEM_SOURCE → provider (paired defaults)
 src/
-  App.tsx                 # shell: header, area, chat, map overlay, composer, bottom nav
+  App.tsx                 # hash router (#/ landing, #/app/<page>)
+  app-context.tsx         # locale/area/GPS/units shared state (no backend logic)
   api/client.ts           # POST /api/chat + contract→UI adapter; timeout + ApiError
+  api/services.ts         # typed page queries over the two real endpoints
+  api/hooks.ts            # loading/error/offline/empty query states
+  components/ui.tsx       # cards, badges, skeletons, state views (presentation only)
+  components/cards.tsx    # chat cards (safety/zone/route/composer)
+  pages/Landing.tsx       # public hero + live search into AI chat
+  pages/Shell.tsx         # sidebar + header + mobile nav
+  pages/HomePage.tsx      # safety + sea + recommendation from one backend answer
+  pages/MapPage.tsx       # Leaflet: user fix, zones, route (vessels/satellite disabled)
+  pages/AiPage.tsx        # real conversational chat over POST /api/chat
+  pages/FishingPage.tsx   # backend zones; species/history honestly unavailable
+  pages/WeatherPage.tsx   # current sea/wind/weather; forecast honestly unavailable
+  pages/AlertsPage.tsx    # backend-derived alerts or empty state
+  pages/SettingsPage.tsx  # language/units/area prefs + real source status
   types.ts                # SafetyState, OrcaAnswer, ChatMessage, Locale
   mock/brain.ts           # offline fallback only (used when the API is unreachable)
   i18n/strings.ts         # full English + Hindi + Marathi dictionaries

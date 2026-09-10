@@ -101,6 +101,15 @@ export async function sendChat(
   location: string,
   opts: SendChatOptions = {},
 ): Promise<OrcaAnswer> {
+  return toOrcaAnswer(await postChatRaw(message, location, opts));
+}
+
+/** Single raw POST /api/chat returning the wire contract (one request). */
+export async function postChatRaw(
+  message: string,
+  location: string,
+  opts: SendChatOptions = {},
+): Promise<ORCAResponse> {
   const base = opts.baseUrl ?? apiBaseUrl();
   const timeoutMs = opts.timeoutMs ?? 8000;
   const fetchFn = opts.fetchFn ?? fetch;
@@ -146,7 +155,7 @@ export async function sendChat(
     if (!body || typeof body !== 'object' || !isStatus((body as ORCAResponse).status)) {
       throw new ApiError('BAD_RESPONSE', 'ORCA gave an unclear answer. Please try again.', res.status);
     }
-    return toOrcaAnswer(body as ORCAResponse);
+    return body as ORCAResponse;
   } finally {
     clearTimeout(timer);
   }
