@@ -7,6 +7,7 @@ import { DeterministicReasoningEngine } from '../reasoning/engine.js';
 import { DemoSafetyProvider } from './demoSafety.js';
 import { IncoisSafetyProvider } from './incois.js';
 import { NullEcosystem } from '../ecosystem/types.js';
+import { NullPfz } from '../pfz/providers.js';
 import {
   NullSafetyProvider,
   activeAdvisories,
@@ -50,7 +51,7 @@ function stubSafety(list: SafetyAdvisory[]): MarineSafetyProvider {
 }
 
 function depsWith(safety: MarineSafetyProvider) {
-  return { provider: calmMarine(), reasoning: new DeterministicReasoningEngine(), safety, ecosystem: new NullEcosystem() };
+  return { provider: calmMarine(), reasoning: new DeterministicReasoningEngine(), safety, ecosystem: new NullEcosystem(), pfz: new NullPfz() };
 }
 
 describe('advisoryToWarning (central mapping)', () => {
@@ -175,6 +176,7 @@ describe('orchestrator: official advisories drive the existing engine', () => {
       reasoning: new DeterministicReasoningEngine(),
       safety: new DemoSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
     };
     const safe = await orchestrate({ message: 'Hello', location: 'X' }, deps);
     const caution = await orchestrate({ message: 'Will there be strong winds?', location: 'X' }, deps);

@@ -8,6 +8,7 @@ import type {
 import type { DomainAssessment } from '../reasoning/engine.js';
 import type { MarineSafetyProvider } from '../safety/types.js';
 import type { MarineEcosystemProvider } from '../ecosystem/types.js';
+import type { PfzProvider } from '../pfz/providers.js';
 
 /**
  * Agent architecture — one small interface every specialist implements.
@@ -23,6 +24,7 @@ export interface AgentContext extends AreaContext {
   provider: MarineDataProvider;
   safety: MarineSafetyProvider;
   ecosystem: MarineEcosystemProvider;
+  pfz: PfzProvider;
 }
 
 export type AgentStatus = 'available' | 'unavailable' | 'error';
@@ -63,12 +65,23 @@ export interface AgentResult {
    * domain could not be read — the orchestrator substitutes neutral readings
    * and records the gap instead of pretending the domain is safe.
    */
-  data: SeaReading | WeatherReading | HazardReading | LocationAdvice | null;
+  data: SeaReading | WeatherReading | HazardReading | LocationAdvice | RoutePlan | null;
 }
 
 export interface LocationAdvice {
   nearShoreOnly: boolean;
   guidance: string;
+}
+
+export interface RoutePlan {
+  destinationId: string;
+  destinationName: string;
+  waypoints: Array<{ latitude: number; longitude: number }>;
+  distanceKm: number;
+  bearingDeg: number;
+  bearingCompass: string;
+  riskScore: number;
+  riskLevel: 'low' | 'moderate' | 'high';
 }
 
 export interface OrcaAgent {

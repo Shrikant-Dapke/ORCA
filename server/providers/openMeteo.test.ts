@@ -11,6 +11,7 @@ import {
 import { ProviderError } from './types.js';
 import { NullSafetyProvider } from '../safety/types.js';
 import { NullEcosystem } from '../ecosystem/types.js';
+import { NullPfz } from '../pfz/providers.js';
 import { orchestrate } from '../orchestrator.js';
 import { DeterministicReasoningEngine } from '../reasoning/engine.js';
 
@@ -299,6 +300,7 @@ describe('orchestrator over normalized live data (existing engine, unchanged)', 
       reasoning: new DeterministicReasoningEngine(),
       safety: new NullSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
     };
   }
 
@@ -332,6 +334,7 @@ describe('orchestrator over normalized live data (existing engine, unchanged)', 
           reasoning: new DeterministicReasoningEngine(),
           safety: new NullSafetyProvider(),
           ecosystem: new NullEcosystem(),
+          pfz: new NullPfz(),
         },
       ),
     ).rejects.toBeInstanceOf(ProviderError);

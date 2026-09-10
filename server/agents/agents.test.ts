@@ -6,6 +6,7 @@ import type { MarineDataProvider } from '../providers/types.js';
 import { DemoSafetyProvider } from '../safety/demoSafety.js';
 import { NullSafetyProvider } from '../safety/types.js';
 import { NullEcosystem } from '../ecosystem/types.js';
+import { NullPfz } from '../pfz/providers.js';
 
 /** Live-shaped stub (no network): proves provenance + confidence switch. */
 const stubLiveMarine: MarineDataProvider = {
@@ -27,6 +28,7 @@ function ctx(
     provider: new DemoMarineProvider(),
     safety: new DemoSafetyProvider(),
     ecosystem: new NullEcosystem(),
+    pfz: new NullPfz(),
     ...over,
   };
 }

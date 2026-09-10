@@ -2,6 +2,8 @@ import { resolvePosition } from '../location/areas.js';
 import type { AreaContext } from '../providers/types.js';
 import type { MarineWarning } from '../providers/types.js';
 import { ProviderError } from '../providers/types.js';
+import { bearingDeg, compass16, haversineKm, interpolateWaypoints } from '../geo/geo.js';
+import { nearestZone } from '../pfz/providers.js';
 import {
   assessHazardReading,
   assessSeaReading,
@@ -13,6 +15,7 @@ import {
   advisoryLabel,
   advisoryToWarning,
 } from '../safety/types.js';
+import { tr } from '../i18n/responses.js';
 import type { AgentContext, AgentResult, EvidenceItem, OrcaAgent } from './types.js';
 
 /**
@@ -197,8 +200,8 @@ export class LocationAgent implements OrcaAgent {
     const pos = resolvePosition(ctx.label, (ctx as AreaContext).coordinates);
     const nearShoreOnly = ctx.topic === 'spot' || ctx.topic === 'wind';
     const guidance = nearShoreOnly
-      ? 'Stay in near-shore, sheltered water and avoid deep/open water.'
-      : 'Fish your usual grounds and keep an eye on the sky.';
+      ? tr(ctx.locale, 'loc.guidance.near')
+      : tr(ctx.locale, 'loc.guidance.far');
 
     if (pos.mode === 'gps') {
       return {
@@ -284,6 +287,152 @@ export class EcosystemAgent implements OrcaAgent {
           evidence: [],
           reasoning: 'Ecosystem data could not be retrieved.',
           limitations: [`ecosystem provider unavailable: ${err.message}`],
+          data: null,
+        };
+      }
+      throw err;
+    }
+  }
+}
+
+export class GeoAgent implements OrcaAgent {
+  readonly name = 'geo';
+  canHandle(): boolean {
+    return true;
+  }
+  async run(ctx: AgentContext): Promise<AgentResult> {
+    // Spatial reasoning over available zones. There is deliberately NO
+    // invented restricted-area geometry: with no authoritative polygon
+    // dataset configured, the agent says so instead of guessing.
+    // Auxiliary-provider failure degrades (never 502s the safety answer).
+    try {
+      const zones = await ctx.pfz.getZones(ctx);
+      const dest = nearestZone(zones);
+      if (!dest) {
+        return {
+          agent: this.name,
+          status: 'available',
+          assessment: 'unknown',
+          confidence: CONFIDENCE.unknown,
+          evidence: [{ label: 'Fishing zones', value: 'none on record', source: 'PFZ feed', severity: 'info' }],
+          reasoning: 'No candidate fishing zones are on record right now.',
+          limitations: ['no fishing zones available for spatial reasoning'],
+          data: null,
+        };
+      }
+      return {
+        agent: this.name,
+        status: 'available',
+        assessment: 'unknown',
+        confidence: ctx.provider.dataSource !== 'demo' ? CONFIDENCE.live : CONFIDENCE.demo,
+        evidence: [
+          { label: 'Nearest zone', value: `${dest.distanceKm} km ${dest.bearingCompass}`, source: dest.source, severity: 'info' },
+          { label: 'Restricted areas', value: 'no authoritative dataset on record', source: 'ORCA geo', severity: 'info' },
+        ],
+        reasoning: `Nearest candidate zone is ${dest.distanceKm} km ${dest.bearingCompass}; no authoritative restricted-area data to check it against.`,
+        limitations: ['no authoritative restricted-area polygons configured'],
+        data: null,
+      };
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return {
+          agent: this.name,
+          status: 'unavailable',
+          assessment: 'unknown',
+          confidence: 0,
+          evidence: [],
+          reasoning: 'Spatial reasoning could not run.',
+          limitations: [`zone provider unavailable: ${err.message}`],
+          data: null,
+        };
+      }
+      throw err;
+    }
+  }
+}
+
+export class RouteAgent implements OrcaAgent {
+  readonly name = 'route';
+  canHandle(): boolean {
+    return true;
+  }
+  async run(ctx: AgentContext): Promise<AgentResult> {
+    // Deterministic route math only — never official navigation.
+    // Auxiliary-provider failure degrades (never 502s the safety answer).
+    try {
+      const zones = await ctx.pfz.getZones(ctx);
+      const dest = nearestZone(zones);
+      if (!dest) {
+        return {
+          agent: this.name,
+          status: 'unavailable',
+          assessment: 'unknown',
+          confidence: 0,
+          evidence: [],
+          reasoning: 'No destination zone, so no route was calculated.',
+          limitations: ['no destination zone available'],
+          data: null,
+        };
+      }
+      const pos = resolvePosition(ctx.label, (ctx as AreaContext).coordinates);
+      const origin = { latitude: pos.lat, longitude: pos.lon };
+      const to = { latitude: dest.latitude, longitude: dest.longitude };
+      const [sea, weather] = await Promise.all([
+        ctx.provider.getSea(ctx),
+        ctx.provider.getWeather(ctx),
+      ]);
+      const advisories = activeAdvisories(
+        await ctx.safety.getAdvisories(ctx).catch(() => []),
+      );
+      const severe = advisories.some((a) => a.severity === 'severe');
+
+      const distanceKm = Math.round(haversineKm(origin, to) * 10) / 10;
+      const bearing = Math.round(bearingDeg(origin, to));
+      const waypoints = interpolateWaypoints(origin, to, 3).map((w) => ({
+        latitude: Math.round(w.latitude * 1000) / 1000,
+        longitude: Math.round(w.longitude * 1000) / 1000,
+      }));
+
+      // Environmental risk score 0–100 from the same thresholds as safety.
+      const load = Math.max(sea.waveHeightM / 4, weather.windKph / 70, weather.gustKph / 95);
+      let riskScore = Math.min(100, Math.round(load * 100));
+      if (severe) riskScore = Math.max(riskScore, 90);
+      else if (advisories.some((a) => a.severity !== 'info')) riskScore = Math.max(riskScore, 45);
+      const riskLevel = riskScore >= 67 ? 'high' : riskScore >= 34 ? 'moderate' : 'low';
+
+      return {
+        agent: this.name,
+        status: 'available',
+        assessment: 'unknown',
+        confidence: ctx.provider.dataSource !== 'demo' ? CONFIDENCE.live : CONFIDENCE.demo,
+        evidence: [
+          { label: 'Distance', value: `${distanceKm} km`, source: 'ORCA route engine' },
+          { label: 'Bearing', value: `${compass16(bearing)} (${bearing}°)`, source: 'ORCA route engine' },
+          { label: 'Route risk', value: `${riskLevel} (${riskScore}/100)`, source: 'ORCA route engine' },
+          { label: 'Destination', value: dest.name, source: dest.source },
+        ],
+        reasoning: `Route calculated to ${dest.name}: ${distanceKm} km ${compass16(bearing)}, environmental risk ${riskLevel}. Not official navigation.`,
+        data: {
+          destinationId: dest.id,
+          destinationName: dest.name,
+          waypoints,
+          distanceKm,
+          bearingDeg: bearing,
+          bearingCompass: compass16(bearing),
+          riskScore,
+          riskLevel,
+        },
+      };
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return {
+          agent: this.name,
+          status: 'unavailable',
+          assessment: 'unknown',
+          confidence: 0,
+          evidence: [],
+          reasoning: 'Route could not be calculated.',
+          limitations: [`route inputs unavailable: ${err.message}`],
           data: null,
         };
       }

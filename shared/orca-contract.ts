@@ -7,6 +7,9 @@
 
 export type OrcaStatus = 'safe' | 'caution' | 'danger';
 
+/** Fisherman-facing response locale. Evidence/source names stay English. */
+export type ResponseLocale = 'en' | 'hi' | 'mr';
+
 /** Named reading source. Widen this union (never narrow) when adding providers. */
 export type DataSource = 'demo' | 'open-meteo';
 
@@ -55,6 +58,46 @@ export interface ORCAResponse {
   /** Internal check trail (agent names + key readings). No agent internals. */
   evidence?: string[];
   meta?: OrcaMeta;
+  /** Locale this response is written in (evidence stays English). */
+  locale?: ResponseLocale;
+  /** Candidate fishing zones, when the question asks where to fish. */
+  zones?: FishingZone[];
+  /** Calculated safe-risk route, when the question asks how to reach a zone. */
+  route?: RouteInfo;
+}
+
+/** Waypoint on a calculated route. Never official navigation. */
+export interface RouteWaypoint {
+  latitude: number;
+  longitude: number;
+}
+
+export interface RouteInfo {
+  distanceKm: number;
+  bearingDeg: number;
+  bearingCompass: string;
+  waypoints: RouteWaypoint[];
+  /** 0–100 environmental risk score (higher = riskier). */
+  riskScore: number;
+  riskLevel: 'low' | 'moderate' | 'high';
+  note: string;
+  source: string;
+}
+
+/** Candidate fishing zone. `live:false` + demo source = scripted demo. */
+export interface FishingZone {
+  id: string;
+  name: string;
+  bearingDeg: number;
+  bearingCompass: string;
+  distanceKm: number;
+  latitude: number;
+  longitude: number;
+  sst?: string;
+  chlorophyll?: string;
+  potential: 'moderate' | 'good';
+  source: string;
+  live: boolean;
 }
 
 /** Raw wire shape of POST /api/chat — validated server-side. */
@@ -62,6 +105,7 @@ export interface ChatRequestBody {
   message: unknown;
   location?: unknown;
   coordinates?: unknown;
+  locale?: unknown;
 }
 
 /** Validated request handed to the orchestrator. */
@@ -76,6 +120,8 @@ export interface ChatRequest {
    * the configured marine/weather providers. Absent in demo/manual mode.
    */
   coordinates?: Coordinates;
+  /** Response language. UI locale default; Devanagari input auto-detects. */
+  locale?: ResponseLocale;
 }
 
 export interface ApiErrorBody {

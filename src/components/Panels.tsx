@@ -1,13 +1,20 @@
 import type { Strings } from '../i18n/strings';
+import type { OrcaAnswer } from '../types';
 
 /** Simple companion panels for bottom-nav tabs (no dashboard — just sea summary, alerts, help). */
 
-export function SeaPanel({ strings, area }: { strings: Strings; area: string }) {
-  const rows = [
-    { icon: 'waves', label: strings.seaLabel, value: 'Slightly rough after noon' },
-    { icon: 'air', label: strings.windLabel, value: 'Moderate now, strong later' },
-    { icon: 'partly_cloudy_day', label: strings.weatherLabel, value: 'Cloudy, clearing tomorrow' },
-  ];
+export function SeaPanel({ strings, area, live }: { strings: Strings; area: string; live?: OrcaAnswer | null }) {
+  const rows = live
+    ? [
+        { icon: 'waves', label: strings.seaLabel, value: live.conditions.sea ?? '—' },
+        { icon: 'air', label: strings.windLabel, value: live.conditions.wind ?? '—' },
+        { icon: 'partly_cloudy_day', label: strings.weatherLabel, value: live.conditions.weather ?? '—' },
+      ]
+    : [
+        { icon: 'waves', label: strings.seaLabel, value: 'Slightly rough after noon' },
+        { icon: 'air', label: strings.windLabel, value: 'Moderate now, strong later' },
+        { icon: 'partly_cloudy_day', label: strings.weatherLabel, value: 'Cloudy, clearing tomorrow' },
+      ];
   return (
     <div className="px-4 pb-4">
       <div className="rounded-2xl bg-surface-lowest p-4 shadow-md">
@@ -32,8 +39,19 @@ export function SeaPanel({ strings, area }: { strings: Strings; area: string }) 
   );
 }
 
-export function AlertsPanel({ strings, area }: { strings: Strings; area: string }) {
-  const alerts = [
+export function AlertsPanel({ strings, area, live }: { strings: Strings; area: string; live?: OrcaAnswer | null }) {
+  const liveAlert =
+    live && live.state !== 'SAFE'
+      ? [
+          {
+            icon: live.state === 'DANGER' ? 'crisis_alert' : 'warning',
+            tone: live.state === 'DANGER' ? 'bg-error-container text-on-error-container' : 'bg-caution-bg text-caution-text',
+            title: live.headline,
+            body: live.important,
+          },
+        ]
+      : [];
+  const alerts = [...liveAlert,
     {
       icon: 'crisis_alert',
       tone: 'bg-error-container text-on-error-container',

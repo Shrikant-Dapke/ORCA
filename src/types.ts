@@ -1,4 +1,4 @@
-import type { OrcaMeta } from '../shared/orca-contract';
+import type { FishingZone, OrcaMeta, RouteInfo } from '../shared/orca-contract';
 
 export type SafetyState = 'SAFE' | 'CAUTION' | 'DANGER';
 
@@ -20,6 +20,9 @@ export interface OrcaAnswer {
   explanation: string;
   /** Wire metadata passed through for the live/demo badge. Optional, render-safe. */
   meta?: OrcaMeta;
+  /** Candidate zones / calculated route (present for where-to-go questions). */
+  zones?: FishingZone[];
+  route?: RouteInfo;
 }
 
 export interface ChatMessage {
@@ -30,7 +33,5 @@ export interface ChatMessage {
   createdAt: number;
 }
 
-/** Supported locales. Only English ships strings in this MVP —
- *  Hindi/Marathi dictionaries are intentionally empty stubs so the
- *  architecture is ready without claiming support we don't have. */
+/** Supported locales. English, Hindi, and Marathi dictionaries ship. */
 export type Locale = 'en' | 'hi' | 'mr';

@@ -3,14 +3,14 @@
  * The orchestrator never touches a real API directly, so a live provider
  * can replace the demo one without touching reasoning or routes.
  */
-import type { Coordinates, DataSource } from '../../shared/orca-contract.js';
+import type { Coordinates, DataSource, ResponseLocale } from '../../shared/orca-contract.js';
 
 /** Single place that decides what counts as "live" — never scatter this check. */
 export function isLiveSource(dataSource: DataSource): boolean {
   return dataSource !== 'demo';
 }
 
-export type Topic = 'sea' | 'wind' | 'danger' | 'spot' | 'general';
+export type Topic = 'sea' | 'wind' | 'danger' | 'spot' | 'zone' | 'route' | 'general';
 export type Timeframe = 'tomorrow' | 'today' | 'general';
 
 export interface AreaContext {
@@ -23,6 +23,8 @@ export interface AreaContext {
    * used in-memory for the current request and never persisted or logged.
    */
   coordinates?: Coordinates;
+  /** Response language for provider-composed advice (default 'en'). */
+  locale?: ResponseLocale;
 }
 
 export interface SeaReading {

@@ -1,5 +1,5 @@
 import express, { type Request, type Response } from 'express';
-import type { ApiErrorBody, ChatRequest, Coordinates } from '../shared/orca-contract.js';
+import type { ApiErrorBody, ChatRequest, Coordinates, ResponseLocale } from '../shared/orca-contract.js';
 import { defaultDeps, orchestrate, type OrchestratorDeps } from './orchestrator.js';
 import { ProviderError, isLiveSource } from './providers/types.js';
 import { isLiveAdvisorySource } from './safety/types.js';
@@ -51,10 +51,11 @@ export function validateChatBody(body: unknown): ChatRequest {
   if (!body || typeof body !== 'object') {
     throw new ValidationError('Request body must be a JSON object.');
   }
-  const { message, location, coordinates } = body as {
+  const { message, location, coordinates, locale } = body as {
     message?: unknown;
     location?: unknown;
     coordinates?: unknown;
+    locale?: unknown;
   };
 
   if (typeof message !== 'string' || message.trim().length === 0) {
@@ -71,10 +72,16 @@ export function validateChatBody(body: unknown): ChatRequest {
     throw new ValidationError(`"location" must be ${MAX_LOCATION} characters or fewer.`);
   }
   const fix = validateCoordinates(coordinates);
+  const cleanLocale: ResponseLocale | undefined =
+    locale === 'hi' || locale === 'mr' || locale === 'en' ? locale : undefined;
+  if (locale !== undefined && cleanLocale === undefined) {
+    throw new ValidationError('"locale" must be one of "en", "hi", "mr".');
+  }
   return {
     message: message.trim(),
     location: cleanLocation || DEFAULT_LOCATION,
     ...(fix ? { coordinates: fix } : {}),
+    ...(cleanLocale ? { locale: cleanLocale } : {}),
   };
 }
 
@@ -93,6 +100,7 @@ export function createApp(deps: OrchestratorDeps = defaultDeps()): express.Expre
       ecosystemSource: deps.ecosystem.ecosystemSource,
       ecosystemLive: isLiveEcosystemSource(deps.ecosystem.ecosystemSource),
       ecosystemDataset: deps.ecosystem.dataset,
+      pfzSource: deps.pfz.pfzSource,
     });
   });
 

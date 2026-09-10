@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Locale } from '../types';
+
+const SPEECH_LANG: Record<Locale, string> = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' };
 
 interface SpeechApi {
   supported: boolean;
@@ -26,7 +29,7 @@ type Recog = {
  * - Anywhere else / denied mic: `supported === false`, UI shows a
  *   friendly fallback message instead of breaking.
  */
-export function useSpeechRecognition(onFinal: (text: string) => void): SpeechApi {
+export function useSpeechRecognition(onFinal: (text: string) => void, locale: Locale = 'en'): SpeechApi {
   const recogRef = useRef<Recog | null>(null);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
@@ -45,7 +48,7 @@ export function useSpeechRecognition(onFinal: (text: string) => void): SpeechApi
     }
     try {
       const r = new Ctor();
-      r.lang = 'en-IN';
+      r.lang = SPEECH_LANG[locale] ?? 'en-IN';
       r.interimResults = true;
       r.continuous = false;
       r.onresult = (e: any) => {
@@ -82,7 +85,7 @@ export function useSpeechRecognition(onFinal: (text: string) => void): SpeechApi
         /* noop */
       }
     };
-  }, []);
+  }, [locale]);
 
   const start = useCallback(() => {
     const r = recogRef.current;
@@ -109,12 +112,12 @@ export function useSpeechRecognition(onFinal: (text: string) => void): SpeechApi
 }
 
 /** Optional voice read-out of ORCA answers (speechSynthesis, guarded). */
-export function speak(text: string): void {
+export function speak(text: string, locale: Locale = 'en'): void {
   try {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-IN';
+    u.lang = SPEECH_LANG[locale] ?? 'en-IN';
     u.rate = 1;
     window.speechSynthesis.speak(u);
   } catch {

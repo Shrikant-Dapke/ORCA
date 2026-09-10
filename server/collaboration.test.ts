@@ -8,8 +8,9 @@ import { DemoSafetyProvider } from './safety/demoSafety.js';
 import { NullSafetyProvider, type MarineSafetyProvider, type SafetyAdvisory } from './safety/types.js';
 import { DemoEcosystemProvider } from './ecosystem/demoEcosystem.js';
 import { NullEcosystem, type MarineEcosystemProvider } from './ecosystem/types.js';
-import { HazardAgent, LocationAgent, SeaAgent, WeatherAgent } from './agents/index.js';
-import { EcosystemAgent } from './agents/index.js';
+import { NullPfz } from './pfz/providers.js';
+import { DemoPfzProvider } from './pfz/providers.js';
+import { EcosystemAgent, GeoAgent, HazardAgent, LocationAgent, RouteAgent, SeaAgent, WeatherAgent } from './agents/index.js';
 
 /** Live-shaped stub (no network): calm seas, so advisories decide alone. */
 const calmLiveMarine: MarineDataProvider = {
@@ -46,6 +47,7 @@ describe('collaborative execution', () => {
         reasoning: new DeterministicReasoningEngine(),
       safety: new DemoSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
       agents: AGENTS,
       },
     );
@@ -65,7 +67,7 @@ describe('collaborative execution', () => {
     };
     const { response, trace } = await orchestrateWithTrace(
       { message: 'Can I go fishing tomorrow?', location: 'Your Fishing Area' },
-      { provider: calmLiveMarine, reasoning: new DeterministicReasoningEngine(), safety, agents: AGENTS, ecosystem: new NullEcosystem() },
+      { provider: calmLiveMarine, reasoning: new DeterministicReasoningEngine(), safety, agents: AGENTS, ecosystem: new NullEcosystem(), pfz: new NullPfz() },
     );
     expect(response.status).toBe('danger');
     expect(response.evidence?.join(' ')).toContain('INCOIS SVAS');
@@ -93,6 +95,7 @@ describe('evidence-backed explanations', () => {
         reasoning: new DeterministicReasoningEngine(),
       safety: new DemoSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
       agents: AGENTS,
       },
     );
@@ -138,6 +141,7 @@ describe('provenance end to end', () => {
         reasoning: new DeterministicReasoningEngine(),
       safety: new NullSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
       agents: AGENTS,
       },
     );
@@ -157,6 +161,7 @@ describe('provenance end to end', () => {
         reasoning: new DeterministicReasoningEngine(),
       safety: new DemoSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
       agents: AGENTS,
       },
     );
@@ -173,6 +178,7 @@ describe('provenance end to end', () => {
         reasoning: new DeterministicReasoningEngine(),
       safety: new DemoSafetyProvider(),
       ecosystem: new NullEcosystem(),
+      pfz: new NullPfz(),
       agents: AGENTS,
       },
     );
@@ -194,6 +200,7 @@ describe('ecosystem collaboration', () => {
       reasoning: new DeterministicReasoningEngine(),
       safety: new NullSafetyProvider(),
       ecosystem,
+      pfz: new NullPfz(),
       agents: AGENTS5,
     };
   }
@@ -284,6 +291,7 @@ describe('ecosystem collaboration', () => {
         reasoning: new DeterministicReasoningEngine(),
         safety: new DemoSafetyProvider(),
         ecosystem: new DemoEcosystemProvider(),
+        pfz: new NullPfz(),
         agents: AGENTS5,
       },
     );
@@ -295,5 +303,118 @@ describe('ecosystem collaboration', () => {
       { ...ecoDeps(new DemoEcosystemProvider()) },
     );
     expect(immediate.response.explanation ?? '').not.toContain('ecosystem conditions may be useful');
+  });
+});
+
+describe('route and zone collaboration', () => {
+  const AGENTS7 = [...AGENTS, new GeoAgent(), new RouteAgent()];
+
+  function fullDemo() {
+    return {
+      provider: new DemoMarineProvider(),
+      reasoning: new DeterministicReasoningEngine(),
+      safety: new DemoSafetyProvider(),
+      ecosystem: new DemoEcosystemProvider(),
+      pfz: new DemoPfzProvider(),
+      agents: AGENTS7,
+    };
+  }
+
+  it('zone questions return labeled demo zones without breaking safety', async () => {
+    const { response } = await orchestrateWithTrace(
+      { message: 'Where should I fish today?', location: 'X' },
+      fullDemo(),
+    );
+    expect(['safe', 'caution', 'danger']).toContain(response.status);
+    expect(response.zones).toHaveLength(2);
+    expect(response.zones?.[0].live).toBe(false);
+    expect(response.zones?.[0].source).toBe('Demo data');
+  });
+
+  it('route questions return a calculated route with risk and waypoints', async () => {
+    const { response, trace } = await orchestrateWithTrace(
+      { message: 'Show me the safest route to that zone.', location: 'X' },
+      fullDemo(),
+    );
+    expect(response.route).toBeDefined();
+    expect(response.route?.waypoints.length).toBeGreaterThanOrEqual(2);
+    expect(response.route?.note).toContain('not official navigation');
+    expect(response.route?.source).toBe('ORCA route engine');
+    expect(['low', 'moderate', 'high']).toContain(response.route?.riskLevel);
+    expect(trace.steps.some((s) => s.startsWith('route:'))).toBe(true);
+  });
+
+  it('safety questions skip spatial work but keep the full safety bench', async () => {
+    const { response, trace } = await orchestrateWithTrace(
+      { message: 'Is there any danger nearby?', location: 'X' },
+      fullDemo(),
+    );
+    expect(response.status).toBe('danger');
+    expect(response.route).toBeUndefined();
+    expect(response.zones).toBeUndefined();
+    expect(trace.steps.some((s) => s.startsWith('route:'))).toBe(false);
+  });
+
+  it('severe hazard plus planned route still yields DANGER', async () => {
+    const { response } = await orchestrateWithTrace(
+      { message: 'Show me the safest route to that zone.', location: 'X' },
+      {
+        provider: calmLiveMarine,
+        reasoning: new DeterministicReasoningEngine(),
+        safety: {
+          name: 'StubSafety',
+          advisorySource: 'demo',
+          getAdvisories: async () => [liveAdvisory()],
+        } satisfies MarineSafetyProvider,
+        ecosystem: new NullEcosystem(),
+        pfz: new DemoPfzProvider(),
+        agents: AGENTS7,
+      },
+    );
+    expect(response.status).toBe('danger');
+  });
+});
+
+describe('multilingual responses', () => {
+  function mrDemo() {
+    return {
+      provider: new DemoMarineProvider(),
+      reasoning: new DeterministicReasoningEngine(),
+      safety: new DemoSafetyProvider(),
+      ecosystem: new DemoEcosystemProvider(),
+      pfz: new DemoPfzProvider(),
+      agents: AGENTS,
+    };
+  }
+
+  it('answers the Marathi demo question in Marathi with the same evidence', async () => {
+    const { response } = await orchestrateWithTrace(
+      { message: 'उद्या सकाळी मासेमारीला जाणे सुरक्षित आहे का?', location: 'X' },
+      mrDemo(),
+    );
+    expect(response.locale).toBe('mr');
+    expect(response.status).toBe('safe');
+    expect(response.headline).toBe('जाण्यास सुरक्षित');
+    expect(response.summary).toContain('उद्या सकाळी');
+    // evidence/source names stay English
+    expect(response.evidence?.join(' ')).toContain('Demo data');
+  });
+
+  it('answers Hindi questions in Hindi', async () => {
+    const { response } = await orchestrateWithTrace(
+      { message: 'क्या कल सुबह मछली पकड़ना सुरक्षित है?', location: 'X', locale: 'hi' },
+      mrDemo(),
+    );
+    expect(response.locale).toBe('hi');
+    expect(response.headline).toBe('जाने के लिए सुरक्षित');
+  });
+
+  it('keeps English when asked in English', async () => {
+    const { response } = await orchestrateWithTrace(
+      { message: 'Can I go fishing tomorrow?', location: 'X' },
+      mrDemo(),
+    );
+    expect(response.locale).toBe('en');
+    expect(response.headline).toBe('SAFE TO GO');
   });
 });

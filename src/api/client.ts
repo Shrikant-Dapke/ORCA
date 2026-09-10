@@ -1,4 +1,4 @@
-import type { ApiErrorBody, Coordinates, ORCAResponse, OrcaStatus } from '../../shared/orca-contract';
+import type { ApiErrorBody, Coordinates, ORCAResponse, OrcaStatus, ResponseLocale } from '../../shared/orca-contract';
 import type { OrcaAnswer, SafetyState } from '../types';
 
 /**
@@ -81,6 +81,8 @@ export function toOrcaAnswer(res: ORCAResponse): OrcaAnswer {
       res?.explanation?.trim() ||
       'ORCA checked sea, wind, weather and marine advisories before answering.',
     meta: res?.meta,
+    zones: Array.isArray(res?.zones) ? res.zones : undefined,
+    route: res?.route && typeof res.route === 'object' ? res.route : undefined,
   };
 }
 
@@ -90,6 +92,8 @@ export interface SendChatOptions {
   fetchFn?: typeof fetch;
   /** Browser GPS fix — sent only to our own API for the current request. */
   coordinates?: Coordinates;
+  /** UI language for the response (server may auto-detect from script). */
+  locale?: ResponseLocale;
 }
 
 export async function sendChat(
@@ -113,6 +117,7 @@ export async function sendChat(
           message,
           location,
           ...(opts.coordinates ? { coordinates: opts.coordinates } : {}),
+          ...(opts.locale ? { locale: opts.locale } : {}),
         }),
         signal: controller.signal,
       });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { OrcaAnswer, SafetyState } from '../types';
+import type { Locale } from '../types';
 import type { Strings } from '../i18n/strings';
 import { speak } from '../hooks/useSpeech';
 
@@ -31,6 +32,7 @@ interface Props {
   answer: OrcaAnswer;
   area: string;
   strings: Strings;
+  locale?: Locale;
 }
 
 /**
@@ -38,7 +40,7 @@ interface Props {
  * warning, recommendation, expandable explanation, Listen + Share actions.
  * Every value comes from the ORCA backend — no Stitch demo copy.
  */
-export default function SafetyCard({ answer, area, strings }: Props) {
+export default function SafetyCard({ answer, area, strings, locale }: Props) {
   const [open, setOpen] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
   const s = STATE_STYLE[answer.state];
@@ -180,7 +182,7 @@ export default function SafetyCard({ answer, area, strings }: Props) {
       {/* Actions */}
       <div className="mt-2.5 flex flex-col gap-2 pt-1">
         <button
-          onClick={() => speak(`${answer.headline}. ${answer.summary} ${strings.recommendationLabel}: ${answer.recommendation}`)}
+          onClick={() => speak(`${answer.headline}. ${answer.summary} ${strings.recommendationLabel}: ${answer.recommendation}`, locale)}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-container px-4 font-headline text-[14px] font-bold text-on-primary shadow-sm transition hover:bg-primary active:scale-[0.98]"
         >
           <span className="material-symbols-outlined text-[20px]">volume_up</span>

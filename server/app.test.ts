@@ -11,6 +11,7 @@ import { DemoSafetyProvider } from './safety/demoSafety.js';
 import { NullSafetyProvider } from './safety/types.js';
 import { DemoEcosystemProvider } from './ecosystem/demoEcosystem.js';
 import { NullEcosystem } from './ecosystem/types.js';
+import { DemoPfzProvider } from './pfz/providers.js';
 import { ProviderError, type MarineDataProvider } from './providers/types.js';
 import type { ApiErrorBody, ORCAResponse } from '../shared/orca-contract.js';
 
@@ -38,6 +39,7 @@ function testDeps(provider: MarineDataProvider): OrchestratorDeps {
     reasoning: new DeterministicReasoningEngine(),
     safety: new DemoSafetyProvider(),
     ecosystem: new DemoEcosystemProvider(),
+    pfz: new DemoPfzProvider(),
     agents: [new SeaAgent(), new WeatherAgent(), new HazardAgent(), new LocationAgent()],
   }
 }
@@ -111,6 +113,17 @@ describe('POST /api/chat', () => {
     expect(status).toBe(400);
   });
 
+  it('rejects an invalid locale with 400', async () => {
+    const { status } = await postChat({ message: 'Hi', locale: 'ta' });
+    expect(status).toBe(400);
+  });
+
+  it('accepts an explicit locale', async () => {
+    const { status, json } = await postChat({ message: 'Hi', locale: 'mr' });
+    expect(status).toBe(200);
+    expect((json as ORCAResponse).locale).toBe('mr');
+  });
+
   it('rejects a non-object body with 400', async () => {
     const res = await fetch(`${base}/api/chat`, {
       method: 'POST',
@@ -134,6 +147,7 @@ describe('GET /api/health', () => {
       ecosystemSource: string;
       ecosystemLive: boolean;
       ecosystemDataset: string;
+      pfzSource: string;
     };
     expect(json.status).toBe('ok');
     expect(json.live).toBe(false);
@@ -143,6 +157,7 @@ describe('GET /api/health', () => {
     expect(json.ecosystemSource).toBe('demo');
     expect(json.ecosystemLive).toBe(false);
     expect(json.ecosystemDataset).toBe('demo');
+    expect(json.pfzSource).toBe('demo');
   });
 
   it('reports live marine + no advisories for the open-meteo default pairing', async () => {

@@ -1,5 +1,6 @@
 import { resolvePosition } from '../location/areas.js';
 import { THRESHOLDS } from '../reasoning/thresholds.js';
+import { tr } from '../i18n/responses.js';
 import type {
   AreaContext,
   HazardReading,
@@ -332,25 +333,16 @@ export class OpenMeteoMarineProvider implements MarineDataProvider {
     const caution =
       !danger &&
       (s.windKph >= THRESHOLDS.windCautionKph || s.waveHeightM >= THRESHOLDS.waveCautionM);
-    const measured = `${s.waveHeightM.toFixed(1)} m waves with ${Math.round(s.windKph)} kph winds`;
-    if (danger) {
-      return {
-        bestTime: 'No safe window today',
-        warning: `Live readings are severe: ${measured}. Small boats should not go out.`,
-        recommendation: 'Do not go fishing today. Wait for the next safe update from ORCA.',
-      };
-    }
-    if (caution) {
-      return {
-        bestTime: 'Early morning only — re-check before leaving',
-        warning: `Live readings show ${measured}. Conditions may worsen through the day.`,
-        recommendation: 'If you go, stay close to shore and return early.',
-      };
-    }
+    const locale = ctx.locale;
+    const measured = tr(locale, 'om.measured', {
+      wave: s.waveHeightM.toFixed(1),
+      wind: Math.round(s.windKph),
+    });
+    const band = danger ? 'danger' : caution ? 'caution' : 'safe';
     return {
-      bestTime: 'Early morning – 12:00 PM',
-      warning: `Live readings look fair (${measured}), but the sea can change fast.`,
-      recommendation: 'Plan a morning trip and keep an eye on the sky.',
+      bestTime: tr(locale, `om.${band}.bestTime`),
+      warning: tr(locale, `om.${band}.warning`, { m: measured }),
+      recommendation: tr(locale, `om.${band}.recommendation`),
     };
   }
 }

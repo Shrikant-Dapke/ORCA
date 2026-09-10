@@ -102,9 +102,15 @@ shared/
 server/
   index.ts                # bootstrap: API + static dist on one port (PORT, default 3001)
   app.ts                  # POST /api/chat, GET /api/health, validation, error mapping
-  orchestrator.ts         # intent → agents (parallel) → fusion → guardrail → ORCAResponse
+  orchestrator.ts         # planner → staged agents → fusion → guardrail → ORCAResponse
+  planner/plan.ts         # deterministic task planner (no LLM; trace-first)
   agents/types.ts         # OrcaAgent + AgentResult contract (assessment/confidence/evidence)
-  agents/index.ts         # sea / weather / hazard / location specialists (no cross-talk)
+  agents/index.ts         # sea/weather/hazard/location/ecosystem/geo/route specialists
+                          # (no cross-talk; geo+route informational, never safety verdicts)
+  geo/geo.ts              # pure geo math: haversine, bearing, interp, point-in-poly
+  pfz/providers.ts        # DemoPfzProvider (labeled) + honest INCOIS stub + NullPfz
+  pfz/select.ts           # ORCA_PFZ_SOURCE → provider (paired defaults)
+  satellite/mosdac.ts     # MOSDAC stub (SSO creds absent; config documented)
   reasoning/engine.ts     # ReasoningEngine + shared per-domain assessors (thresholds live once)
   reasoning/fusion.ts     # EvidenceFusion: provenance, conflicts, guardrail (final authority)
   reasoning/explain.ts    # evidence-backed fisherman explanations (no invented facts)
@@ -123,12 +129,29 @@ server/
   ecosystem/pfz.ts        # PFZ extension point (no implementation — no authorized source)
   ecosystem/select.ts     # ORCA_ECOSYSTEM_SOURCE → provider (paired defaults)
 src/
-  App.tsx                 # shell: header, area, chat, composer, bottom nav
+  App.tsx                 # shell: header, area, chat, map overlay, composer, bottom nav
   api/client.ts           # POST /api/chat + contract→UI adapter; timeout + ApiError
   types.ts                # SafetyState, OrcaAnswer, ChatMessage, Locale
   mock/brain.ts           # offline fallback only (used when the API is unreachable)
-  ...components/hooks/i18n (unchanged UI)
+  i18n/strings.ts         # full English + Hindi + Marathi dictionaries
+  location/geolocation.ts # browser GPS wrapper (denied/timeout/unsupported safe)
+  components/ZoneCard.tsx # recommended zone + calculated route cards
+  components/MapOverlay.tsx  # Leaflet map: user fix, zones, route (demo-labeled)
+  ...other components/hooks (Stitch visual direction)
 ```
+
+## Languages
+
+UI + answers in English, Hindi, Marathi (selector in header; Devanagari
+input auto-detects). Evidence/source names stay English; trace stays
+English. Voice input/output follows the UI language (hi-IN/mr-IN/en-IN).
+
+## Map
+
+"View Map" (zone/route cards) opens a Leaflet overlay: your GPS fix (or
+nothing, with a notice), candidate zones, and the calculated route.
+Background tiles need internet; positions/overlays are ours either way.
+Demo waters are labeled and never presented as navigation.
 
 ## API
 
@@ -148,8 +171,9 @@ with an "Offline mode" notice if the server is unreachable. Set
 
 ## Tests
 
-`npm test` — 183 tests: collaborative agents (contracts, assessments,
-provenance), fusion (conflicts, tie-breaks, dedupe, guardrail), evidence-backed
+`npm test` — 223 tests: planner + intent topics, geo math, PFZ providers,
+route/geo agents, i18n dictionaries + detection + localized responses,
+collaborative agents (contracts, assessments, provenance), fusion (conflicts, tie-breaks, dedupe, guardrail), evidence-backed
 explanations, ecosystem (dataset freshness, provider, agent, selection,
 collaboration), reasoning SAFE/CAUTION/DANGER boundaries, orchestrator
 (all states, unknown question, provider failure, trace), API (contract shape,
@@ -167,10 +191,16 @@ default 96) and reports unavailable rather than labeling history as live.
 SST-only; chlorophyll stays undefined until a current dataset exists. The
 ecosystem agent is informational (`unknown`) and can never create DANGER.
 
+PFZ honesty: official INCOIS PFZ has no machine-readable API (text bulletins
++ WebGIS visuals only — scraping disallowed), so zones come from a
+deterministic demo provider (labeled demo) or nothing. MOSDAC needs SSO
+credentials (absent) — stub only. Route math is ORCA's own and labeled
+"not official navigation". Geo has no authoritative polygons — reported,
+never invented.
+
 ## Conventions for this MVP
 
 - No hardcoded ports/cities — only the generic **"Your Fishing Area"** label,
-  renameable in the UI.
-- No language is claimed as supported unless its dictionary ships
-  (Hindi/Marathi appear as "soon", disabled).
+  renameable in the UI, or the fisherman's live GPS fix.
+- English, Hindi, and Marathi are fully supported in UI and answers.
 - Simple language everywhere; agent terminology stays out of the conversation.

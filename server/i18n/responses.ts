@@ -1,0 +1,251 @@
+import type { ResponseLocale } from '../../shared/orca-contract.js';
+
+/**
+ * Fisherman-facing response strings in English, Hindi, and Marathi.
+ * Evidence/source names are NEVER translated (they stay English).
+ * Trace/agent-reasoning strings are NEVER translated (internal only).
+ * English entries are byte-identical to the pre-i18n texts.
+ *
+ * Placeholders use {name} and are filled by fmt(). Join word for lists
+ * differs per language ('and' / 'और' / 'आणि').
+ */
+
+type Dict = Record<string, string>;
+type Bundle = Record<ResponseLocale, Dict>;
+
+function fill(template: string, params: Record<string, string | number> = {}): string {
+  return template.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? ''));
+}
+
+const en: Dict = {
+  // headlines
+  'hl.safe.tomorrow': 'SAFE TO GO',
+  'hl.safe.general': 'LOOKS GOOD FOR NOW',
+  'hl.caution.default': 'BE CAREFUL',
+  'hl.caution.sea': 'BE CAREFUL TODAY',
+  'hl.caution.wind': 'STRONG WINDS EXPECTED',
+  'hl.caution.spot': 'STAY CLOSE, STAY SHALLOW',
+  'hl.danger': 'DO NOT GO — DANGER',
+  // summaries
+  'sum.safe.tomorrow': 'Tomorrow morning looks suitable for fishing in your selected area.',
+  'sum.safe.general': 'Conditions in your fishing area look suitable at the moment.',
+  'sum.caution.spot': 'Open waters look rough. The calmer option is near-shore, sheltered water.',
+  'sum.caution.wind': 'Yes — strong winds are expected later today in your fishing area.',
+  'sum.caution.sea': 'Today the sea is passable, but the afternoon looks rough in your area.',
+  'sum.caution.default': 'Conditions need care — part of the day looks rough in your area.',
+  'sum.danger': 'There is danger near your fishing area. Stay on land today.',
+  // explanation: danger
+  'ex.danger.demoWarning': 'A marine warning is active: {x} (demo data).',
+  'ex.danger.liveWarning': 'A {source} warning is active: {x}.',
+  'ex.danger.read.waves': 'waves around {x}',
+  'ex.danger.read.wind': 'winds of {x}',
+  'ex.danger.read.gusts': 'gusting to {x}',
+  'ex.danger.readings': 'Readings are severe, with {x}.',
+  'ex.danger.fallback': 'Several danger signals agree that going out is unsafe today.',
+  'ex.danger.close': 'When warnings and severe readings agree, ORCA always says danger — no fishing today.',
+  // explanation: caution
+  'ex.caution.full': 'ORCA recommends caution because {d}, while {c}.',
+  'ex.caution.only': 'ORCA recommends caution because {d}.',
+  'ex.drv.wind': 'winds reach {w}{g}',
+  'ex.drv.gusts': ' with gusts to {x}',
+  'ex.drv.sea': 'waves are around {x}',
+  'ex.drv.advisory': 'an advisory is active ({x})',
+  'ex.drv.fallback.waves': 'waves around {x}',
+  'ex.drv.fallback.wind': 'winds of {x}',
+  'ex.drv.fallback.rough': 'conditions in part of the day look rough',
+  'ex.con.wind': 'winds remain acceptable at {x}',
+  'ex.con.sea': 'waves stay around {x}',
+  'ex.con.noalert': 'there is no red alert',
+  // explanation: safe
+  'ex.safe.sea': 'the sea is {x}',
+  'ex.safe.wind': 'winds of {x}',
+  'ex.safe.sky': 'under {x} skies',
+  'ex.safe.base': ', and there is no active marine warning.',
+  'ex.safe.fallback': 'Available readings look fair, and there is no active marine warning.',
+  'ex.opportunity': ' Nearby sea-surface temperature is {x} — ecosystem conditions may be useful for identifying potentially favorable fishing areas.',
+  // location guidance
+  'loc.guidance.near': 'Stay in near-shore, sheltered water and avoid deep/open water.',
+  'loc.guidance.far': 'Fish your usual grounds and keep an eye on the sky.',
+  // demo marine advice by scenario
+  'adv.calm.bestTime': '6:00 AM – 12:00 PM',
+  'adv.calm.warning': 'Winds may become stronger after 3:00 PM.',
+  'adv.calm.recommendation': 'Go in the morning and return before conditions worsen.',
+  'adv.breezy.bestTime': '6:00 AM – 11:00 AM only',
+  'adv.breezy.warning': 'Strong winds and high waves expected after 12:00 PM. Small boats should stay close to shore.',
+  'adv.breezy.recommendation': 'If you go, fish only in the early morning and stay near the shore.',
+  'adv.mixed.bestTime': '6:00 AM – 11:00 AM',
+  'adv.mixed.warning': 'Avoid deep/open water today — waves are higher there.',
+  'adv.mixed.recommendation': 'Fish close to shore in sheltered water and return before noon.',
+  'adv.storm.bestTime': 'No safe window today',
+  'adv.storm.warning': 'A marine warning is active for your area. High waves and storm winds can sink small boats.',
+  'adv.storm.recommendation': 'Do not go fishing today. Wait for the next safe update from ORCA.',
+  // live open-meteo advice templates
+  'om.danger.bestTime': 'No safe window today',
+  'om.danger.warning': 'Live readings are severe: {m}. Small boats should not go out.',
+  'om.danger.recommendation': 'Do not go fishing today. Wait for the next safe update from ORCA.',
+  'om.caution.bestTime': 'Early morning only — re-check before leaving',
+  'om.caution.warning': 'Live readings show {m}. Conditions may worsen through the day.',
+  'om.caution.recommendation': 'If you go, stay close to shore and return early.',
+  'om.safe.bestTime': 'Early morning – 12:00 PM',
+  'om.safe.warning': 'Live readings look fair ({m}), but the sea can change fast.',
+  'om.safe.recommendation': 'Plan a morning trip and keep an eye on the sky.',
+  'om.measured': '{wave} m waves with {wind} kph winds',
+  // demo safety headlines
+  'haz.demo.severe': 'Small-vessel overturning risk — stay ashore',
+  'haz.demo.moderate': 'Rough-sea caution for small vessels',
+  // list join
+  andWord: 'and',
+};
+
+const hi: Dict = {
+  'hl.safe.tomorrow': 'जाने के लिए सुरक्षित',
+  'hl.safe.general': 'अभी ठीक लग रहा है',
+  'hl.caution.default': 'सावधान रहें',
+  'hl.caution.sea': 'आज सावधान रहें',
+  'hl.caution.wind': 'तेज़ हवाओं की संभावना',
+  'hl.caution.spot': 'किनारे के पास ही रहें',
+  'hl.danger': 'मत जाएं — खतरा है',
+  'sum.safe.tomorrow': 'कल सुबह आपके चुने हुए क्षेत्र में मछली पकड़ने के लिए उपयुक्त लग रहा है।',
+  'sum.safe.general': 'इस समय आपके मछली पकड़ने वाले क्षेत्र में स्थिति उपयुक्त लग रही है।',
+  'sum.caution.spot': 'खुला समुद्र उबड़-खाबड़ लग रहा है। शांत विकल्प किनारे का सुरक्षित पानी है।',
+  'sum.caution.wind': 'हां — आज आपके क्षेत्र में बाद में तेज़ हवाएं चलने की संभावना है।',
+  'sum.caution.sea': 'आज समुद्र पार करने योग्य है, लेकिन दोपहर बाद आपके क्षेत्र में उबड़-खाबड़ लग रहा है।',
+  'sum.caution.default': 'सावधानी की ज़रूरत है — दिन के कुछ हिस्से में स्थिति खराब लग रही है।',
+  'sum.danger': 'आपके मछली पकड़ने वाले क्षेत्र के पास खतरा है। आज ज़मीन पर ही रहें।',
+  'ex.danger.demoWarning': 'एक समुद्री चेतावनी सक्रिय है: {x} (डेमो डेटा)।',
+  'ex.danger.liveWarning': '{source} की चेतावनी सक्रिय है: {x}।',
+  'ex.danger.read.waves': '{x} के आसपास लहरें',
+  'ex.danger.read.wind': '{x} की हवाएं',
+  'ex.danger.read.gusts': '{x} तक के झोंके',
+  'ex.danger.readings': 'माप गंभीर हैं: {x}।',
+  'ex.danger.fallback': 'कई खतरे के संकेत सहमत हैं कि आज बाहर जाना असुरक्षित है।',
+  'ex.danger.close': 'जब चेतावनियां और गंभीर माप सहमत हों, ORCA हमेशा खतरा कहता है — आज मछली पकड़ने न जाएं।',
+  'ex.caution.full': 'ORCA सावधानी की सलाह देता है क्योंकि {d}, जबकि {c}।',
+  'ex.caution.only': 'ORCA सावधानी की सलाह देता है क्योंकि {d}।',
+  'ex.drv.wind': 'हवाएं {w} तक पहुंच रही हैं{g}',
+  'ex.drv.gusts': ', झोंके {x} तक',
+  'ex.drv.sea': 'लहरें {x} के आसपास हैं',
+  'ex.drv.advisory': 'एक परामर्श सक्रिय है ({x})',
+  'ex.drv.fallback.waves': '{x} के आसपास लहरें',
+  'ex.drv.fallback.wind': '{x} की हवाएं',
+  'ex.drv.fallback.rough': 'दिन के कुछ हिस्से में स्थिति खराब लग रही है',
+  'ex.con.wind': 'हवाएं {x} पर स्वीकार्य बनी हुई हैं',
+  'ex.con.sea': 'लहरें {x} के आसपास बनी हुई हैं',
+  'ex.con.noalert': 'कोई रेड अलर्ट नहीं है',
+  'ex.safe.sea': 'समुद्र {x} है',
+  'ex.safe.wind': '{x} की हवाएं हैं',
+  'ex.safe.sky': '{x} आसमान के नीचे',
+  'ex.safe.base': ', और कोई सक्रिय समुद्री चेतावनी नहीं है।',
+  'ex.safe.fallback': 'उपलब्ध माप ठीक लग रहे हैं, और कोई सक्रिय समुद्री चेतावनी नहीं है।',
+  'ex.opportunity': ' आसपास समुद्र की सतह का तापमान {x} है — पारिस्थितिक स्थितियां संभावित अनुकूल मछली क्षेत्रों की पहचान में उपयोगी हो सकती हैं।',
+  'loc.guidance.near': 'किनारे के पास, सुरक्षित पानी में रहें और गहरे/खुले पानी से बचें।',
+  'loc.guidance.far': 'अपने रोज़ के स्थानों पर मछली पकड़ें और आसमान पर नज़र रखें।',
+  'adv.calm.bestTime': 'सुबह 6:00 – दोपहर 12:00',
+  'adv.calm.warning': 'दोपहर 3:00 बजे के बाद हवाएं तेज़ हो सकती हैं।',
+  'adv.calm.recommendation': 'सुबह जाएं और स्थिति बिगड़ने से पहले लौट आएं।',
+  'adv.breezy.bestTime': 'केवल सुबह 6:00 – 11:00',
+  'adv.breezy.warning': 'दोपहर 12:00 बजे के बाद तेज़ हवाओं और ऊंची लहरों की संभावना है। छोटी नावें किनारे के पास रहें।',
+  'adv.breezy.recommendation': 'यदि जाएं, तो केवल सुबह-सुबह मछली पकड़ें और किनारे के पास रहें।',
+  'adv.mixed.bestTime': 'सुबह 6:00 – 11:00',
+  'adv.mixed.warning': 'आज गहरे/खुले पानी से बचें — वहां लहरें ऊंची हैं।',
+  'adv.mixed.recommendation': 'किनारे के पास सुरक्षित पानी में मछली पकड़ें और दोपहर से पहले लौटें।',
+  'adv.storm.bestTime': 'आज कोई सुरक्षित समय नहीं',
+  'adv.storm.warning': 'आपके क्षेत्र के लिए समुद्री चेतावनी सक्रिय है। ऊंची लहरें और तूफानी हवाएं छोटी नावों को डुबा सकती हैं।',
+  'adv.storm.recommendation': 'आज मछली पकड़ने न जाएं। ORCA के अगले सुरक्षित अपडेट की प्रतीक्षा करें।',
+  'om.danger.bestTime': 'आज कोई सुरक्षित समय नहीं',
+  'om.danger.warning': 'लाइव माप गंभीर हैं: {m}। छोटी नावों को बाहर नहीं जाना चाहिए।',
+  'om.danger.recommendation': 'आज मछली पकड़ने न जाएं। ORCA के अगले सुरक्षित अपडेट की प्रतीक्षा करें।',
+  'om.caution.bestTime': 'केवल सुबह-सुबह — निकलने से पहले फिर जांचें',
+  'om.caution.warning': 'लाइव माप दिखाते हैं: {m}। दिन में स्थिति बिगड़ सकती है।',
+  'om.caution.recommendation': 'यदि जाएं, तो किनारे के पास रहें और जल्दी लौटें।',
+  'om.safe.bestTime': 'सुबह – दोपहर 12:00',
+  'om.safe.warning': 'लाइव माप ठीक लग रहे हैं ({m}), लेकिन समुद्र तेज़ी से बदल सकता है।',
+  'om.safe.recommendation': 'सुबह की यात्रा की योजना बनाएं और आसमान पर नज़र रखें।',
+  'om.measured': '{wind} kph हवाओं के साथ {wave} m लहरें',
+  'haz.demo.severe': 'छोटी नाव पलटने का खतरा — किनारे पर रहें',
+  'haz.demo.moderate': 'छोटी नावों के लिए उबड़-खाबड़ समुद्र की सावधानी',
+  andWord: 'और',
+};
+
+const mr: Dict = {
+  'hl.safe.tomorrow': 'जाण्यास सुरक्षित',
+  'hl.safe.general': 'सध्या ठीक दिसत आहे',
+  'hl.caution.default': 'काळजी घ्या',
+  'hl.caution.sea': 'आज काळजी घ्या',
+  'hl.caution.wind': 'जोरदार वाऱ्याची शक्यता',
+  'hl.caution.spot': 'किनाऱ्याजवळच राहा',
+  'hl.danger': 'जाऊ नका — धोका आहे',
+  'sum.safe.tomorrow': 'उद्या सकाळी तुमच्या निवडलेल्या भागात मासेमारीसाठी योग्य दिसत आहे.',
+  'sum.safe.general': 'सध्या तुमच्या मासेमारी क्षेत्रातील परिस्थिती योग्य दिसत आहे.',
+  'sum.caution.spot': 'खुले समुद्र खवळलेले दिसत आहे. शांत पर्याय किनाऱ्याजवळचे सुरक्षित पाणी आहे.',
+  'sum.caution.wind': 'होय — आज तुमच्या भागात नंतर जोरदार वारे वाहण्याची शक्यता आहे.',
+  'sum.caution.sea': 'आज समुद्र पार करण्याजोगा आहे, पण दुपारनंतर तुमच्या भागात खवळलेला दिसत आहे.',
+  'sum.caution.default': 'काळजीची गरज आहे — दिवसाच्या काही भागात परिस्थिती खराब दिसत आहे.',
+  'sum.danger': 'तुमच्या मासेमारी क्षेत्राजवळ धोका आहे. आज किनाऱ्यावरच राहा.',
+  'ex.danger.demoWarning': 'सागरी इशारा सक्रिय आहे: {x} (डेमो डेटा).',
+  'ex.danger.liveWarning': '{source} चा इशारा सक्रिय आहे: {x}.',
+  'ex.danger.read.waves': '{x} च्या आसपास लाटा',
+  'ex.danger.read.wind': '{x} वेगाने वारे',
+  'ex.danger.read.gusts': '{x} पर्यंतचे झोत',
+  'ex.danger.readings': 'मापने गंभीर आहेत: {x}.',
+  'ex.danger.fallback': 'अनेक धोक्याचे संकेत सहमत आहेत की आज बाहेर जाणे असुरक्षित आहे.',
+  'ex.danger.close': 'जेव्हा इशारे आणि गंभीर मापने सहमत असतात, ORCA नेहमी धोका सांगतो — आज मासेमारीला जाऊ नका.',
+  'ex.caution.full': 'ORCA काळजी घेण्याचा सल्ला देतो कारण {d}, तर {c}.',
+  'ex.caution.only': 'ORCA काळजी घेण्याचा सल्ला देतो कारण {d}.',
+  'ex.drv.wind': 'वारे {w} पर्यंत पोहोचत आहेत{g}',
+  'ex.drv.gusts': ', {x} पर्यंतचे झोत',
+  'ex.drv.sea': 'लाटा {x} च्या आसपास आहेत',
+  'ex.drv.advisory': 'एक सल्ला सक्रिय आहे ({x})',
+  'ex.drv.fallback.waves': '{x} च्या आसपास लाटा',
+  'ex.drv.fallback.wind': '{x} वेगाने वारे',
+  'ex.drv.fallback.rough': 'दिवसाच्या काही भागात परिस्थिती खराब दिसत आहे',
+  'ex.con.wind': 'वारे {x} वर स्वीकारार्ह आहेत',
+  'ex.con.sea': 'लाटा {x} च्या आसपास आहेत',
+  'ex.con.noalert': 'रेड अलर्ट नाही',
+  'ex.safe.sea': 'समुद्र {x} आहे',
+  'ex.safe.wind': '{x} वेगाने वारे आहेत',
+  'ex.safe.sky': '{x} आकाशाखाली',
+  'ex.safe.base': ', आणि कोणताही सक्रिय सागरी इशारा नाही.',
+  'ex.safe.fallback': 'उपलब्ध मापने ठीक दिसत आहेत, आणि कोणताही सक्रिय सागरी इशारा नाही.',
+  'ex.opportunity': ' जवळपास समुद्रपृष्ठाचे तापमान {x} आहे — परिसंस्थेची परिस्थिती संभाव्य अनुकूल मासेमारी क्षेत्रे ओळखण्यासाठी उपयुक्त ठरू शकते.',
+  'loc.guidance.near': 'किनाऱ्याजवळ, सुरक्षित पाण्यात राहा आणि खोल/खुल्या पाण्यापासून दूर राहा.',
+  'loc.guidance.far': 'तुमच्या नेहमीच्या ठिकाणी मासेमारी करा आणि आकाशावर लक्ष ठेवा.',
+  'adv.calm.bestTime': 'सकाळी 6:00 – दुपारी 12:00',
+  'adv.calm.warning': 'दुपारी 3:00 नंतर वारे जोर धरू शकतात.',
+  'adv.calm.recommendation': 'सकाळी जा आणि परिस्थिती बिघडण्यापूर्वी परत या.',
+  'adv.breezy.bestTime': 'फक्त सकाळी 6:00 – 11:00',
+  'adv.breezy.warning': 'दुपारी 12:00 नंतर जोरदार वारे आणि उंच लाटांची शक्यता आहे. लहान होड्या किनाऱ्याजवळ राहाव्यात.',
+  'adv.breezy.recommendation': 'गेलातच तर फक्त पहाटे मासेमारी करा आणि किनाऱ्याजवळ राहा.',
+  'adv.mixed.bestTime': 'सकाळी 6:00 – 11:00',
+  'adv.mixed.warning': 'आज खोल/खुल्या पाण्यात जाऊ नका — तिथे लाटा उंच आहेत.',
+  'adv.mixed.recommendation': 'किनाऱ्याजवळ सुरक्षित पाण्यात मासेमारी करा आणि दुपारपूर्वी परता.',
+  'adv.storm.bestTime': 'आज सुरक्षित वेळ नाही',
+  'adv.storm.warning': 'तुमच्या भागासाठी सागरी इशारा सक्रिय आहे. उंच लाटा आणि वादळी वारे लहान होड्या बुडवू शकतात.',
+  'adv.storm.recommendation': 'आज मासेमारीला जाऊ नका. ORCA च्या पुढील सुरक्षित अपडेटची वाट पहा.',
+  'om.danger.bestTime': 'आज सुरक्षित वेळ नाही',
+  'om.danger.warning': 'लाइव्ह मापने गंभीर आहेत: {m}। लहान होड्यांनी बाहेर जाऊ नये.',
+  'om.danger.recommendation': 'आज मासेमारीला जाऊ नका. ORCA च्या पुढील सुरक्षित अपडेटची वाट पहा.',
+  'om.caution.bestTime': 'फक्त पहाटे — निघण्यापूर्वी पुन्हा तपासा',
+  'om.caution.warning': 'लाइव्ह मापने दाखवतात: {m}। दिवसभरात परिस्थिती बिघडू शकते.',
+  'om.caution.recommendation': 'गेलातच तर किनाऱ्याजवळ राहा आणि लवकर परता.',
+  'om.safe.bestTime': 'सकाळी – दुपारी 12:00',
+  'om.safe.warning': 'लाइव्ह मापने ठीक दिसत आहेत ({m}), पण समुद्र वेगाने बदलू शकतो.',
+  'om.safe.recommendation': 'सकाळच्या फेरीचे नियोजन करा आणि आकाशावर लक्ष ठेवा.',
+  'om.measured': '{wind} kph वाऱ्यांसह {wave} m लाटा',
+  'haz.demo.severe': 'लहान होडी उलटण्याचा धोका — किनाऱ्यावर राहा',
+  'haz.demo.moderate': 'लहान होड्यांसाठी खवळलेल्या समुद्राची काळजी',
+  andWord: 'आणि',
+};
+
+const BUNDLES: Bundle = { en, hi, mr };
+
+export function tr(locale: ResponseLocale | undefined, key: string, params: Record<string, string | number> = {}): string {
+  const bundle = BUNDLES[locale ?? 'en'] ?? en;
+  const template = bundle[key] ?? en[key] ?? key;
+  return fill(template, params);
+}
+
+export function joinList(locale: ResponseLocale | undefined, parts: string[]): string {
+  const word = tr(locale, 'andWord');
+  return parts.join(` ${word} `);
+}

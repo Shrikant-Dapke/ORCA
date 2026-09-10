@@ -11,8 +11,11 @@ import { answerFor } from './mock/brain';
 import { sendChat } from './api/client';
 import { requestBrowserLocation, type GpsCoordinates } from './location/geolocation';
 import type { GpsUiState } from './components/FishingAreaBar';
+import { RouteCard, ZoneCard } from './components/ZoneCard';
+import MapOverlay, { type MapUser } from './components/MapOverlay';
 import { useSpeechRecognition } from './hooks/useSpeech';
 import type { ChatMessage, Locale } from './types';
+import type { FishingZone, RouteInfo } from '../shared/orca-contract';
 
 let idCounter = 0;
 const nid = () => `m${Date.now()}_${idCounter++}`;
@@ -33,6 +36,12 @@ export default function App() {
   // to our own API with each chat request. Null = demo/manual label mode.
   const [coords, setCoords] = useState<GpsCoordinates | null>(null);
   const [gpsUi, setGpsUi] = useState<GpsUiState>('idle');
+  const [mapView, setMapView] = useState<{
+    user: MapUser | null;
+    zones: FishingZone[];
+    route?: RouteInfo | null;
+    demoWaters: boolean;
+  } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +62,10 @@ export default function App() {
       // offline mock brain as graceful fallback so chat never breaks.
       // The GPS fix (when granted) rides along for live positioning.
       try {
-        const answer = await sendChat(q, area, coords ? { coordinates: coords } : {});
+        const answer = await sendChat(q, area, {
+          ...(coords ? { coordinates: coords } : {}),
+          locale,
+        });
         setApiError(null);
         setLiveData(answer.meta?.live === true);
         setMessages((m) => [
@@ -70,7 +82,7 @@ export default function App() {
       }
       setBusy(false);
     },
-    [busy, area, coords],
+    [busy, area, coords, locale],
   );
 
   const handleUseLocation = useCallback(async () => {
@@ -101,6 +113,7 @@ export default function App() {
       },
       [ask],
     ),
+    locale,
   );
 
   const handleMic = useCallback(() => {
@@ -124,6 +137,31 @@ export default function App() {
   }, []);
 
   const showGreeting = messages.length === 0 && !busy;
+
+  const openMap = useCallback(
+    (zones: FishingZone[], route?: RouteInfo | null) => {
+      setMapView({
+        user: coords ? { latitude: coords.latitude, longitude: coords.longitude } : null,
+        zones,
+        route: route ?? null,
+        demoWaters: !coords,
+      });
+    },
+    [coords],
+  );
+
+  const askRoute = useCallback(
+    (zone: FishingZone) => {
+      void ask(`Show me the safest route to ${zone.name}.`);
+    },
+    [ask],
+  );
+
+  // Latest assistant answer feeds the Sea/Alerts tabs with live values.
+  const lastAnswer = useMemo(() => {
+    const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.answer);
+    return last?.answer ?? null;
+  }, [messages]);
 
   // Live one-line sea summary for the area card, from the latest answer.
   const seaLine = useMemo(() => {
@@ -162,8 +200,8 @@ export default function App() {
 
         {/* Main scroll region */}
         <main ref={scrollRef} className="chat-scroll relative z-10 min-h-0 flex-1 overflow-y-auto px-4 pb-2 pt-3">
-          {tab === 'sea' && <SeaPanel strings={strings} area={area} />}
-          {tab === 'alerts' && <AlertsPanel strings={strings} area={area} />}
+          {tab === 'sea' && <SeaPanel strings={strings} area={area} live={lastAnswer} />}
+          {tab === 'alerts' && <AlertsPanel strings={strings} area={area} live={lastAnswer} />}
           {tab === 'help' && <HelpPanel strings={strings} onAsk={(q) => void ask(q)} />}
 
           {tab === 'chat' && (
@@ -211,7 +249,27 @@ export default function App() {
                           answer={m.answer}
                           area={coords ? strings.usingYourLocation : area}
                           strings={strings}
+                          locale={locale}
                         />
+                      )}
+                      {m.answer?.zones && m.answer.zones.length > 0 && (
+                        <div className="mt-2">
+                          <ZoneCard
+                            strings={strings}
+                            zones={m.answer.zones}
+                            onViewMap={(z) => openMap(m.answer?.zones ?? [z], m.answer?.route)}
+                            onRoute={askRoute}
+                          />
+                        </div>
+                      )}
+                      {m.answer?.route && (
+                        <div className="mt-2">
+                          <RouteCard
+                            strings={strings}
+                            route={m.answer.route}
+                            onViewMap={() => openMap(m.answer?.zones ?? [], m.answer?.route)}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -266,6 +324,16 @@ export default function App() {
           onTab={setTab}
           alertCount={2}
         />
+        {mapView && (
+          <MapOverlay
+            strings={strings}
+            user={mapView.user}
+            zones={mapView.zones}
+            route={mapView.route}
+            demoWaters={mapView.demoWaters}
+            onClose={() => setMapView(null)}
+          />
+        )}
       </div>
     </div>
   );

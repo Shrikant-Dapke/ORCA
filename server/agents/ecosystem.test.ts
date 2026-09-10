@@ -7,8 +7,9 @@ import { DemoMarineProvider } from '../providers/demo.js';
 import { DemoSafetyProvider } from '../safety/demoSafety.js';
 import { DemoEcosystemProvider } from '../ecosystem/demoEcosystem.js';
 import { NullEcosystem, type MarineEcosystemProvider } from '../ecosystem/types.js';
+import { NullPfz } from '../pfz/providers.js';
 
-function ctx(ecosystem: MarineEcosystemProvider, over: Partial<AreaContext> = {}): AgentContext {
+function ctx(ecosystem: MarineEcosystemProvider, over: Partial<AgentContext> = {}): AgentContext {
   return {
     label: 'Your Fishing Area',
     topic: 'general',
@@ -16,6 +17,7 @@ function ctx(ecosystem: MarineEcosystemProvider, over: Partial<AreaContext> = {}
     provider: new DemoMarineProvider(),
     safety: new DemoSafetyProvider(),
     ecosystem,
+    pfz: new NullPfz(),
     ...over,
   };
 }

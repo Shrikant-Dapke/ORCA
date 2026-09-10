@@ -1,4 +1,5 @@
 import type { AreaContext } from '../providers/types.js';
+import { tr } from '../i18n/responses.js';
 import type { MarineSafetyProvider, SafetyAdvisory } from './types.js';
 
 /**
@@ -26,7 +27,7 @@ export class DemoSafetyProvider implements MarineSafetyProvider {
           ...base,
           severity: 'severe',
           type: 'small-vessel',
-          headline: 'Small-vessel overturning risk — stay ashore',
+          headline: tr(ctx.locale, 'haz.demo.severe'),
           source: 'Demo safety watch',
         },
       ];
@@ -37,7 +38,7 @@ export class DemoSafetyProvider implements MarineSafetyProvider {
           ...base,
           severity: 'moderate',
           type: 'small-vessel',
-          headline: 'Rough-sea caution for small vessels',
+          headline: tr(ctx.locale, 'haz.demo.moderate'),
           source: 'Demo safety watch',
         },
       ];

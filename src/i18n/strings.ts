@@ -15,8 +15,8 @@ interface LanguageMeta {
 
 export const LANGUAGES: LanguageMeta[] = [
   { code: 'en', label: 'English', nativeLabel: 'English', supported: true },
-  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी (soon)', supported: false },
-  { code: 'mr', label: 'Marathi', nativeLabel: 'मराठी (soon)', supported: false },
+  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी', supported: true },
+  { code: 'mr', label: 'Marathi', nativeLabel: 'मराठी', supported: true },
 ];
 
 const en = {
@@ -70,17 +70,136 @@ const en = {
   alertsTitle: 'Safety alerts',
   seaTitle: "Today's sea",
   helpTitle: 'How to use ORCA',
-} as const;
+  zoneTitle: 'Fishing zone',
+  viewMap: 'View Map',
+  safestRoute: 'Safest Route',
+  routeTitle: 'Suggested route',
+  closeMap: 'Close',
+  demoMapNote: 'Demo waters — not for navigation',
+};
 
 export type Strings = typeof en;
 
-/** Placeholders for future locales — undefined until translated. */
-const hi: Partial<Strings> | undefined = undefined;
-const mr: Partial<Strings> | undefined = undefined;
+const hi: Strings = {
+  brand: 'ORCA',
+  tagline: 'आपका समुद्री सहायक',
+  greetingTitle: 'नमस्ते! आज सुरक्षित मछली पकड़ने के लिए तैयार?',
+  greetingBody:
+    'सरल शब्दों में पूछें। मैं बताऊंगा कि समुद्र सुरक्षित है या नहीं, कब जाएं और कब लौटें।',
+  fishingAreaLabel: 'आपका मछली क्षेत्र',
+  fishingAreaValue: 'किनारे के पास का पानी',
+  fishingAreaHint: 'अपने तट के लिए सेट करें',
+  suggestedTitle: 'पूछकर देखें',
+  quickTitle: 'जल्दी पूछें',
+  suggested: [
+    'क्या मैं कल मछली पकड़ने जा सकता हूं?',
+    'आज समुद्र कैसा है?',
+    'कहां मछली पकड़ना सुरक्षित रहेगा?',
+    'क्या तेज़ हवाएं चलेंगी?',
+    'क्या पास में कोई खतरा है?',
+  ],
+  inputPlaceholder: 'ORCA से पूछें… जैसे: क्या मैं कल जा सकता हूं?',
+  voiceHint: 'माइक दबाएं और बोलें',
+  micTitle: 'आवाज़ तैयार है',
+  listening: 'सुन रहा है… बोलें',
+  voiceNotSupported: 'इस ब्राउज़र में आवाज़ टाइपिंग उपलब्ध नहीं है — कृपया लिखें।',
+  whyTitle: 'ORCA ने ऐसा क्यों कहा?',
+  whyCheckedLabel: 'ORCA ने जांचा:',
+  bestTimeLabel: 'सबसे अच्छा समय',
+  seaLabel: 'समुद्र',
+  windLabel: 'हवा',
+  weatherLabel: 'मौसम',
+  importantLabel: 'महत्वपूर्ण',
+  recommendationLabel: 'सिफारिश',
+  listen: 'सुनें',
+  share: 'यह सलाह साझा करें',
+  copied: 'कॉपी हो गया',
+  navChat: 'चैट',
+  navSea: 'समुद्र',
+  navAlerts: 'चेतावनी',
+  navHelp: 'मदद',
+  newChat: 'नई चैट',
+  demoNote: 'डेमो डेटा',
+  liveNote: 'लाइव • Open-Meteo',
+  gpsLocked: 'GPS जुड़ा',
+  demoWaters: 'डेमो जलक्षेत्र',
+  useMyLocation: 'मेरी जगह इस्तेमाल करें',
+  findingLocation: 'आपकी जगह खोजी जा रही है…',
+  usingYourLocation: 'आपकी जगह इस्तेमाल हो रही है',
+  stopUsingLocation: 'रोकें',
+  locationDenied: 'जगह उपलब्ध नहीं — क्षेत्र का नाम इस्तेमाल होगा',
+  alertsTitle: 'सुरक्षा चेतावनियां',
+  seaTitle: 'आज का समुद्र',
+  helpTitle: 'ORCA कैसे इस्तेमाल करें',
+  zoneTitle: 'मछली क्षेत्र',
+  viewMap: 'नक्शा देखें',
+  safestRoute: 'सबसे सुरक्षित रास्ता',
+  routeTitle: 'सुझाया रास्ता',
+  closeMap: 'बंद करें',
+  demoMapNote: 'डेमो जलक्षेत्र — नेविगेशन के लिए नहीं',
+};
+
+const mr: Strings = {
+  brand: 'ORCA',
+  tagline: 'तुमचा सागरी सहाय्यक',
+  greetingTitle: 'नमस्कार! आज सुरक्षित मासेमारीसाठी तयार?',
+  greetingBody:
+    'सोप्या शब्दांत विचारा. समुद्र सुरक्षित आहे का, कधी जावे आणि कधी परतावे ते मी सांगेन.',
+  fishingAreaLabel: 'तुमचे मासेमारी क्षेत्र',
+  fishingAreaValue: 'किनाऱ्याजवळचे पाणी',
+  fishingAreaHint: 'तुमच्या किनाऱ्यासाठी सेट करा',
+  suggestedTitle: 'विचारून पहा',
+  quickTitle: 'झटपट प्रश्न',
+  suggested: [
+    'मी उद्या मासेमारीला जाऊ शकतो का?',
+    'आज समुद्र कसा आहे?',
+    'कुठे मासेमारी करणे सुरक्षित राहील?',
+    'जोरदार वारे वाहतील का?',
+    'जवळपास काही धोका आहे का?',
+  ],
+  inputPlaceholder: 'ORCA ला विचारा… उदा: मी उद्या जाऊ शकतो का?',
+  voiceHint: 'माइक दाबा आणि बोला',
+  micTitle: 'आवाज तयार आहे',
+  listening: 'ऐकत आहे… बोला',
+  voiceNotSupported: 'या ब्राउझरमध्ये आवाज टायपिंग उपलब्ध नाही — कृपया लिहा.',
+  whyTitle: 'ORCA ने असे का सांगितले?',
+  whyCheckedLabel: 'ORCA ने तपासले:',
+  bestTimeLabel: 'सर्वोत्तम वेळ',
+  seaLabel: 'समुद्र',
+  windLabel: 'वारा',
+  weatherLabel: 'हवामान',
+  importantLabel: 'महत्त्वाचे',
+  recommendationLabel: 'शिफारस',
+  listen: 'ऐका',
+  share: 'हा सल्ला शेअर करा',
+  copied: 'कॉपी झाले',
+  navChat: 'चॅट',
+  navSea: 'समुद्र',
+  navAlerts: 'इशारे',
+  navHelp: 'मदत',
+  newChat: 'नवीन चॅट',
+  demoNote: 'डेमो डेटा',
+  liveNote: 'लाइव्ह • Open-Meteo',
+  gpsLocked: 'GPS जोडले',
+  demoWaters: 'डेमो पाणी',
+  useMyLocation: 'माझे ठिकाण वापरा',
+  findingLocation: 'तुमचे ठिकाण शोधत आहे…',
+  usingYourLocation: 'तुमचे ठिकाण वापरत आहे',
+  stopUsingLocation: 'थांबवा',
+  locationDenied: 'ठिकाण उपलब्ध नाही — क्षेत्राचे नाव वापरले जाईल',
+  alertsTitle: 'सुरक्षा इशारे',
+  seaTitle: 'आजचा समुद्र',
+  helpTitle: 'ORCA कसे वापरावे',
+  zoneTitle: 'मासेमारी क्षेत्र',
+  viewMap: 'नकाशा पहा',
+  safestRoute: 'सर्वांत सुरक्षित रस्ता',
+  routeTitle: 'सुचवलेला रस्ता',
+  closeMap: 'बंद करा',
+  demoMapNote: 'डेमो पाणी — मार्गदर्शनासाठी नाही',
+};
 
 export function getStrings(locale: Locale): Strings {
-  // Fall back to English for any locale without a full dictionary.
-  if (locale === 'hi' && hi) return { ...en, ...hi };
-  if (locale === 'mr' && mr) return { ...en, ...mr };
+  if (locale === 'hi') return hi;
+  if (locale === 'mr') return mr;
   return en;
 }

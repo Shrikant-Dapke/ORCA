@@ -6,6 +6,7 @@ import type {
   SeaReading,
   WeatherReading,
 } from './types.js';
+import { tr } from '../i18n/responses.js';
 
 /**
  * DEMO provider — clearly isolated sample data for the SIH demo.
@@ -26,7 +27,8 @@ interface DemoScenario {
   windText: string;
   skyText: string;
   warnings: HazardReading['activeWarnings'];
-  advice: ScenarioAdvice;
+  /** Stable key into the trilingual advice dictionary (adv.{id}.*). */
+  adviceId: 'calm' | 'breezy' | 'mixed' | 'storm';
 }
 
 const CALM_MORNING: DemoScenario = {
@@ -37,11 +39,7 @@ const CALM_MORNING: DemoScenario = {
   windText: 'Moderate',
   skyText: 'Clear',
   warnings: [],
-  advice: {
-    bestTime: '6:00 AM – 12:00 PM',
-    warning: 'Winds may become stronger after 3:00 PM.',
-    recommendation: 'Go in the morning and return before conditions worsen.',
-  },
+  adviceId: 'calm',
 };
 
 const BREEZY_AFTERNOON: DemoScenario = {
@@ -52,11 +50,7 @@ const BREEZY_AFTERNOON: DemoScenario = {
   windText: 'Strong after noon',
   skyText: 'Cloudy',
   warnings: [{ level: 'moderate', title: 'Strong-wind advisory after noon (demo)' }],
-  advice: {
-    bestTime: '6:00 AM – 11:00 AM only',
-    warning: 'Strong winds and high waves expected after 12:00 PM. Small boats should stay close to shore.',
-    recommendation: 'If you go, fish only in the early morning and stay near the shore.',
-  },
+  adviceId: 'breezy',
 };
 
 const NEAR_SHORE_MIXED: DemoScenario = {
@@ -67,11 +61,7 @@ const NEAR_SHORE_MIXED: DemoScenario = {
   windText: 'Moderate to strong',
   skyText: 'Cloudy',
   warnings: [{ level: 'moderate', title: 'Rough outer waters (demo)' }],
-  advice: {
-    bestTime: '6:00 AM – 11:00 AM',
-    warning: 'Avoid deep/open water today — waves are higher there.',
-    recommendation: 'Fish close to shore in sheltered water and return before noon.',
-  },
+  adviceId: 'mixed',
 };
 
 const STORM_WARNING: DemoScenario = {
@@ -82,11 +72,7 @@ const STORM_WARNING: DemoScenario = {
   windText: 'Very strong',
   skyText: 'Stormy',
   warnings: [{ level: 'severe', title: 'Storm warning (demo)' }],
-  advice: {
-    bestTime: 'No safe window today',
-    warning: 'A marine warning is active for your area. High waves and storm winds can sink small boats.',
-    recommendation: 'Do not go fishing today. Wait for the next safe update from ORCA.',
-  },
+  adviceId: 'storm',
 };
 
 /** Deterministic scenario pick so judges can hit every state on demand. */
@@ -122,6 +108,12 @@ export class DemoMarineProvider implements MarineDataProvider {
   }
 
   async getAdvice(ctx: AreaContext): Promise<ScenarioAdvice> {
-    return pickScenario(ctx).advice;
+    const id = pickScenario(ctx).adviceId;
+    const locale = ctx.locale;
+    return {
+      bestTime: tr(locale, `adv.${id}.bestTime`),
+      warning: tr(locale, `adv.${id}.warning`),
+      recommendation: tr(locale, `adv.${id}.recommendation`),
+    };
   }
 }
