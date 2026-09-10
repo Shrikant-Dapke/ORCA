@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Fish, Waves } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Header from './components/Header';
 import FishingAreaBar from './components/FishingAreaBar';
 import SuggestedQuestions from './components/SuggestedQuestions';
@@ -126,14 +125,26 @@ export default function App() {
 
   const showGreeting = messages.length === 0 && !busy;
 
-  return (
-    <div className="ocean-bg flex h-full justify-center">
-      {/* Desktop ambience: keep the chat a phone-like column, ocean fills the sides */}
-      <div className="relative flex h-full w-full max-w-[520px] flex-col overflow-hidden sm:my-0 sm:border-x sm:border-cyan-200/10">
-        {/* soft top glow */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-56 bg-gradient-to-b from-cyan-400/15 to-transparent" />
+  // Live one-line sea summary for the area card, from the latest answer.
+  const seaLine = useMemo(() => {
+    const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.answer);
+    if (!last?.answer) return '';
+    const c = last.answer.conditions;
+    return `Sea: ${c.sea} • Wind: ${c.wind}`;
+  }, [messages]);
 
-        <Header strings={strings} locale={locale} onLocale={setLocale} onNewChat={newChat} live={liveData} />
+  return (
+    <div className="orca-bg flex h-full justify-center">
+      {/* Desktop: phone-like column centered on a light backdrop */}
+      <div className="relative flex h-full w-full max-w-[520px] flex-col overflow-hidden sm:border-x sm:border-outline-variant/60">
+        <Header
+          strings={strings}
+          locale={locale}
+          onLocale={setLocale}
+          onNewChat={newChat}
+          gpsActive={gpsUi === 'active'}
+          live={liveData}
+        />
         <FishingAreaBar
           strings={strings}
           area={area}
@@ -141,6 +152,8 @@ export default function App() {
           gps={gpsUi}
           onUseLocation={() => void handleUseLocation()}
           onClearLocation={handleClearLocation}
+          seaLine={seaLine}
+          live={liveData}
         />
 
         {tab === 'chat' && (
@@ -156,18 +169,20 @@ export default function App() {
           {tab === 'chat' && (
             <div className="space-y-3">
               {showGreeting && (
-                <section className="msg-in rounded-3xl bg-white/[0.07] p-5 text-center ring-1 ring-cyan-200/15 backdrop-blur">
-                  <div className="orca-float mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-cyan-300 via-cyan-400 to-blue-600 shadow-[0_0_32px_rgba(34,211,238,0.5)]">
-                    <Fish className="h-9 w-9 text-[#04121f]" strokeWidth={2.2} />
+                <section className="msg-in rounded-2xl bg-surface-lowest p-5 text-center shadow-md">
+                  <div className="orca-float mx-auto grid h-16 w-16 place-items-center rounded-full bg-gradient-to-tr from-primary to-secondary-container shadow-lg">
+                    <span className="material-symbols-outlined text-[34px] text-on-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      sailing
+                    </span>
                   </div>
-                  <h2 className="mt-3 text-lg font-extrabold leading-snug text-white">
+                  <h2 className="mt-3 font-headline text-lg font-bold leading-snug text-on-surface">
                     {strings.greetingTitle}
                   </h2>
-                  <p className="mx-auto mt-1.5 max-w-[34ch] text-[13.5px] leading-relaxed text-cyan-50/80">
+                  <p className="mx-auto mt-1.5 max-w-[34ch] text-[13.5px] leading-relaxed text-on-surface-variant">
                     {strings.greetingBody}
                   </p>
-                  <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-cyan-200/60">
-                    <Waves className="h-3.5 w-3.5" />
+                  <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[14px] text-secondary">waves</span>
                     <span>🟢 Safe &nbsp;·&nbsp; 🟡 Careful &nbsp;·&nbsp; 🔴 Danger</span>
                   </div>
                 </section>
@@ -175,35 +190,45 @@ export default function App() {
 
               {messages.map((m) =>
                 m.role === 'user' ? (
-                  <div key={m.id} className="msg-in flex justify-end">
-                    <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-cyan-400 px-4 py-3 text-[14.5px] font-medium leading-relaxed text-[#04121f] shadow-[0_4px_20px_rgba(34,211,238,0.3)]">
+                  <div key={m.id} className="msg-in flex items-end justify-end gap-2 pl-8">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary p-3.5 text-[14.5px] font-medium leading-snug text-on-primary shadow-sm">
                       {m.text}
+                    </div>
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-on-primary shadow-sm">
+                      <span className="material-symbols-outlined text-[18px]">person</span>
                     </div>
                   </div>
                 ) : (
-                  <div key={m.id} className="msg-in">
-                    {m.answer && (
-                      <SafetyCard
-                        answer={m.answer}
-                        area={coords ? strings.usingYourLocation : area}
-                        strings={strings}
-                      />
-                    )}
+                  <div key={m.id} className="msg-in flex items-start gap-2 pr-1">
+                    <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-container text-on-primary shadow-sm">
+                      <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        sailing
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {m.answer && (
+                        <SafetyCard
+                          answer={m.answer}
+                          area={coords ? strings.usingYourLocation : area}
+                          strings={strings}
+                        />
+                      )}
+                    </div>
                   </div>
                 ),
               )}
 
               {busy && (
-                <div className="msg-in flex items-center gap-2.5 rounded-3xl bg-white/[0.07] px-4 py-3.5 ring-1 ring-white/10">
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-cyan-400/20 ring-1 ring-cyan-300/30">
-                    <Fish className="h-4 w-4 text-cyan-200" />
+                <div className="msg-in flex items-center gap-2.5 rounded-2xl bg-surface-lowest px-4 py-3.5 shadow-sm">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-container/30">
+                    <span className="material-symbols-outlined text-[18px] text-primary">sailing</span>
                   </div>
                   <div className="flex gap-1.5">
-                    <span className="typing-dot h-2 w-2 rounded-full bg-cyan-300" />
-                    <span className="typing-dot h-2 w-2 rounded-full bg-cyan-300" />
-                    <span className="typing-dot h-2 w-2 rounded-full bg-cyan-300" />
+                    <span className="typing-dot h-2 w-2 rounded-full bg-secondary" />
+                    <span className="typing-dot h-2 w-2 rounded-full bg-secondary" />
+                    <span className="typing-dot h-2 w-2 rounded-full bg-secondary" />
                   </div>
-                  <span className="text-xs text-cyan-100/60">ORCA is checking the sea…</span>
+                  <span className="text-xs text-on-surface-variant">ORCA is checking the sea…</span>
                 </div>
               )}
             </div>
@@ -215,7 +240,7 @@ export default function App() {
             {apiError && (
               <p
                 role="alert"
-                className="msg-in relative z-10 mx-4 mb-1 rounded-xl bg-amber-400/10 px-3 py-2 text-center text-xs text-amber-100 ring-1 ring-amber-300/25"
+                className="msg-in relative z-10 mx-4 mb-1 rounded-xl bg-caution-bg px-3 py-2 text-center text-xs font-medium text-caution-text ring-1 ring-caution-ring"
               >
                 {apiError}
               </p>

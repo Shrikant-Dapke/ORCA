@@ -1,14 +1,19 @@
 # ORCA — Your Marine Assistant (SIH 2026 MVP)
 
-Fisherman-first marine safety chatbot. Mobile-first, dark-ocean UI with
-cyan/aqua accents. No dashboards, no agent jargon — just a clear answer:
+Fisherman-first marine safety chatbot. Mobile-first light marine UI following
+the verified Stitch design (project 3075235080157013652: "SagarDrishti —
+Conversational Marine AI" chat screen): light surfaces, deep-sea-blue
+primary, sea-green safety accents, rounded cards, quick-question chips,
+verdict blocks, expandable explanations, voice-first composer, bottom nav.
+No dashboards, no agent jargon — just a clear answer:
 green = go, yellow = be careful, red = stay on land.
 
-> Note: the Stitch MCP design server was unreachable during this build
-> (auth server rejects dynamic client registration, no API key configured),
-> so the UI was implemented faithfully from the written product spec:
-> rounded cards, dark ocean identity, cyan accents, safety states,
-> "Why did ORCA say this?" explanations, mic + input + send, bottom nav.
+Visual source of truth: the Stitch chat screen's layout, tokens, typography
+(Atkinson Hyperlegible Next + Space Grotesk + Material Symbols) and
+components. Product content stays ORCA's own: ORCA branding, generic fishing
+area (never hardcoded ports), real backend readings, honest demo/live
+labeling — no PFZ coordinates, catch predictions, satellite or INCOIS-live
+claims the system cannot back.
 
 ## Run
 

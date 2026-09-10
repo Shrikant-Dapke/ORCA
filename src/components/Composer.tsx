@@ -1,4 +1,3 @@
-import { Mic, SendHorizontal } from 'lucide-react';
 import type { Strings } from '../i18n/strings';
 
 interface Props {
@@ -14,6 +13,10 @@ interface Props {
   voiceFallback: string | null;
 }
 
+/**
+ * Stitch voice-first composer: mic status row, text input with live voice
+ * bars, and a prominent gradient mic button beside Send.
+ */
 export default function Composer({
   strings,
   value,
@@ -31,60 +34,82 @@ export default function Composer({
   return (
     <div className="relative z-10 px-4 pb-2 pt-2">
       {voiceFallback && (
-        <p className="msg-in mb-2 rounded-xl bg-amber-400/10 px-3 py-2 text-center text-xs text-amber-100 ring-1 ring-amber-300/25">
+        <p className="msg-in mb-2 rounded-xl bg-caution-bg px-3 py-2 text-center text-xs font-medium text-caution-text ring-1 ring-caution-ring">
           {voiceFallback}
         </p>
       )}
-      {(listening || interim) && (
-        <p className="msg-in mb-2 rounded-xl bg-rose-500/10 px-3 py-2 text-center text-xs font-semibold text-rose-100 ring-1 ring-rose-400/30">
-          {listening ? `🎙️ ${strings.listening}…` : ''}
-          {interim ? ` “${interim}”` : ''}
-        </p>
-      )}
 
-      <div className="flex items-end gap-2.5">
-        {/* Prominent microphone control */}
-        <button
-          onClick={onMic}
-          aria-label={listening ? 'Stop listening' : 'Speak your question'}
-          title={strings.voiceHint}
-          className={`relative grid h-14 w-14 shrink-0 place-items-center rounded-full transition active:scale-90 ${
-            listening
-              ? 'mic-live bg-rose-500 text-white shadow-[0_0_28px_rgba(244,63,94,0.6)]'
-              : 'bg-gradient-to-br from-cyan-300 to-cyan-500 text-[#04121f] shadow-[0_0_24px_rgba(34,211,238,0.45)] hover:brightness-110'
-          }`}
-        >
-          <Mic className="h-6 w-6" strokeWidth={2.4} />
-        </button>
+      <div className="rounded-2xl bg-surface-lowest p-3.5 shadow-md">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-[13px] font-bold text-on-surface">
+            <span className={`h-2.5 w-2.5 rounded-full ${listening ? 'animate-pulse bg-error' : 'bg-secondary'}`} />
+            {listening ? strings.listening : strings.micTitle}
+          </span>
+          <span className="flex items-center gap-1 rounded-full bg-surface-container px-2.5 py-1 text-[11px] font-medium text-primary">
+            <span className="material-symbols-outlined text-[14px]">language</span>
+            English
+          </span>
+        </div>
 
-        {/* Text input */}
-        <div className="flex min-w-0 flex-1 items-end gap-2 rounded-3xl bg-white/[0.08] p-2 pl-4 ring-1 ring-white/15 backdrop-blur focus-within:ring-cyan-300/60">
-          <input
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                onSend();
-              }
-            }}
-            placeholder={micSupported ? strings.inputPlaceholder : strings.inputPlaceholder}
-            aria-label="Type your question"
-            disabled={busy}
-            maxLength={500}
-            className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] text-white placeholder:text-slate-400 outline-none disabled:opacity-60"
-          />
+        {(listening || interim) && (
+          <p className="msg-in mt-2 rounded-xl bg-error-container/60 px-3 py-2 text-center text-xs font-semibold text-on-error-container">
+            🎙️ {strings.listening}…{interim ? ` “${interim}”` : ''}
+          </p>
+        )}
+
+        <div className="mt-2.5 flex items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-surface-low px-3.5 py-2.5 shadow-inner ring-1 ring-transparent focus-within:ring-secondary/50">
+            <span className="material-symbols-outlined shrink-0 text-[20px] text-primary">hearing</span>
+            <input
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onSend();
+                }
+              }}
+              placeholder={strings.inputPlaceholder}
+              aria-label="Type your question"
+              disabled={busy}
+              maxLength={500}
+              className="min-w-0 flex-1 bg-transparent py-1 text-[15px] text-on-surface placeholder:text-on-surface-variant/70 outline-none disabled:opacity-60"
+            />
+            {listening ? (
+              <span className="flex shrink-0 items-center gap-1 px-1" aria-hidden>
+                <span className="voice-bar h-3 w-1 rounded-full bg-secondary" />
+                <span className="voice-bar h-5 w-1 rounded-full bg-primary" style={{ animationDelay: '0.15s' }} />
+                <span className="voice-bar h-2 w-1 rounded-full bg-secondary" style={{ animationDelay: '0.3s' }} />
+                <span className="voice-bar h-6 w-1 rounded-full bg-primary-container" style={{ animationDelay: '0.45s' }} />
+              </span>
+            ) : (
+              <button
+                onClick={onSend}
+                disabled={!canSend}
+                aria-label="Send"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-on-primary transition hover:bg-secondary active:scale-90 disabled:opacity-30"
+              >
+                <span className="material-symbols-outlined text-[20px]">send</span>
+              </button>
+            )}
+          </div>
           <button
-            onClick={onSend}
-            disabled={!canSend}
-            aria-label="Send"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cyan-400 text-[#04121f] transition hover:brightness-110 active:scale-90 disabled:opacity-30 disabled:hover:brightness-100"
+            onClick={onMic}
+            aria-label={listening ? 'Stop listening' : 'Speak your question'}
+            title={strings.voiceHint}
+            className={`relative grid h-14 w-14 shrink-0 place-items-center rounded-full text-on-primary shadow-lg transition active:scale-90 ${
+              listening
+                ? 'mic-live bg-error'
+                : 'bg-gradient-to-tr from-primary to-secondary-container hover:brightness-110'
+            }`}
           >
-            <SendHorizontal className="h-5 w-5" strokeWidth={2.4} />
+            <span className="material-symbols-outlined text-[30px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              mic
+            </span>
           </button>
         </div>
       </div>
-      <p className="mt-1.5 text-center text-[11px] text-cyan-100/50">
+      <p className="mt-1.5 text-center text-[11px] text-on-surface-variant">
         {micSupported ? `🎤 ${strings.voiceHint}` : `⌨️ ${strings.voiceNotSupported}`}
       </p>
     </div>
