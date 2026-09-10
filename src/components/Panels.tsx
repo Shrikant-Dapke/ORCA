@@ -4,17 +4,22 @@ import type { OrcaAnswer } from '../types';
 /** Simple companion panels for bottom-nav tabs (no dashboard — just sea summary, alerts, help). */
 
 export function SeaPanel({ strings, area, live }: { strings: Strings; area: string; live?: OrcaAnswer | null }) {
-  const rows = live
-    ? [
-        { icon: 'waves', label: strings.seaLabel, value: live.conditions.sea ?? '—' },
-        { icon: 'air', label: strings.windLabel, value: live.conditions.wind ?? '—' },
-        { icon: 'partly_cloudy_day', label: strings.weatherLabel, value: live.conditions.weather ?? '—' },
-      ]
-    : [
-        { icon: 'waves', label: strings.seaLabel, value: 'Slightly rough after noon' },
-        { icon: 'air', label: strings.windLabel, value: 'Moderate now, strong later' },
-        { icon: 'partly_cloudy_day', label: strings.weatherLabel, value: 'Cloudy, clearing tomorrow' },
-      ];
+  if (!live) {
+    return (
+      <div className="px-4 pb-4">
+        <div className="rounded-2xl bg-surface-lowest p-4 text-center shadow-md">
+          <span className="material-symbols-outlined text-[32px] text-secondary">waves</span>
+          <h2 className="mt-1 font-headline text-base font-bold text-on-surface">{strings.seaTitle}</h2>
+          <p className="mt-1 text-[13px] text-on-surface-variant">{strings.askSeaPrompt}</p>
+        </div>
+      </div>
+    );
+  }
+  const rows = [
+    { icon: 'waves', label: strings.seaLabel, value: live.conditions.sea ?? '—' },
+    { icon: 'air', label: strings.windLabel, value: live.conditions.wind ?? '—' },
+    { icon: 'partly_cloudy_day', label: strings.weatherLabel, value: live.conditions.weather ?? '—' },
+  ];
   return (
     <div className="px-4 pb-4">
       <div className="rounded-2xl bg-surface-lowest p-4 shadow-md">
@@ -31,9 +36,11 @@ export function SeaPanel({ strings, area, live }: { strings: Strings; area: stri
             </div>
           ))}
         </div>
-        <p className="mt-3 rounded-xl bg-caution-bg px-3 py-2.5 text-[13px] font-medium text-caution-text ring-1 ring-caution-ring/60">
-          ⚠️ {strings.importantLabel}: winds rise after 12:00 PM — plan a morning return.
-        </p>
+        {live.state !== 'SAFE' && (
+          <p className="mt-3 rounded-xl bg-caution-bg px-3 py-2.5 text-[13px] font-medium text-caution-text ring-1 ring-caution-ring/60">
+            ⚠️ {strings.importantLabel}: {live.important}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -51,26 +58,29 @@ export function AlertsPanel({ strings, area, live }: { strings: Strings; area: s
           },
         ]
       : [];
-  const alerts = [...liveAlert,
-    {
-      icon: 'crisis_alert',
-      tone: 'bg-error-container text-on-error-container',
-      title: 'Marine warning — strong winds',
-      body: `Active for ${area}. Small boats should not go far from shore after noon.`,
-    },
-    {
-      icon: 'warning',
-      tone: 'bg-caution-bg text-caution-text',
-      title: 'High waves after 12:00 PM',
-      body: 'Waves may grow through the afternoon. Return before conditions worsen.',
-    },
-    {
+  const alerts = [...liveAlert];
+  if (alerts.length === 0) {
+    alerts.push({
       icon: 'check_circle',
       tone: 'bg-tertiary-fixed/40 text-tertiary',
-      title: 'Tomorrow morning looks safe',
-      body: 'Calm sea and clear skies expected 6:00 AM – 12:00 PM.',
+      title: strings.noAlertsTitle,
+      body: strings.noAlertsBody,
+    });
+  }
+  alerts.push(
+    {
+      icon: 'schedule',
+      tone: 'bg-surface-container text-primary',
+      title: strings.tipReturnTitle,
+      body: strings.tipReturnBody,
     },
-  ];
+    {
+      icon: 'visibility',
+      tone: 'bg-surface-container text-primary',
+      title: strings.tipSkyTitle,
+      body: strings.tipSkyBody,
+    },
+  );
   return (
     <div className="px-4 pb-4">
       <div className="rounded-2xl bg-surface-lowest p-4 shadow-md">

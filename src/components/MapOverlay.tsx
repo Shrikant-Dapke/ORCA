@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { FishingZone, RouteInfo } from '../../shared/orca-contract';
@@ -29,21 +29,32 @@ function emojiIcon(emoji: string): L.DivIcon {
 
 /**
  * Minimal honest map: user fix, candidate zones, calculated route.
- * OSM tiles need internet (graceful gray + note offline); positions and
- * overlays are ours either way. Demo waters are labeled, never navigation.
+ * Positions and overlays are ours and always render; OSM background tiles
+ * need internet — when they fail, an inline fallback tile plus a notice bar
+ * keep every control usable. Demo waters are labeled, never navigation.
  */
+const OFFLINE_TILE =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#dce9f2"/><path d="M0 200 Q64 188 128 200 T256 200 V256 H0 Z" fill="#c2d8e6"/><path d="M0 216 Q64 206 128 216 T256 216 V256 H0 Z" fill="#b0cddd"/></svg>`,
+  );
+
 export default function MapOverlay({ strings, user, zones, route, demoWaters, onClose }: Props) {
   const divRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const [tilesDown, setTilesDown] = useState(false);
 
   useEffect(() => {
     if (!divRef.current || mapRef.current) return;
     const map = L.map(divRef.current, { zoomControl: true }).setView([12, 77], 5);
     mapRef.current = map;
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+      errorTileUrl: OFFLINE_TILE,
+    });
+    layer.on('tileerror', () => setTilesDown(true));
+    layer.addTo(map);
 
     const bounds: Array<[number, number]> = [];
     if (user) {
@@ -78,10 +89,14 @@ export default function MapOverlay({ strings, user, zones, route, demoWaters, on
         </button>
       </div>
       <div ref={divRef} className="min-h-0 flex-1" />
+      {tilesDown && (
+        <p role="status" className="msg-in bg-caution-bg px-4 py-1.5 text-center text-[11px] font-semibold text-caution-text">
+          {strings.mapTilesDown}
+        </p>
+      )}
       <p className="px-4 py-2 text-center text-[11px] text-on-surface-variant">
         {demoWaters ? `${strings.demoMapNote} · ` : ''}
-        {!user ? `${strings.locationDenied} · ` : ''}
-        © OpenStreetMap
+        {!user ? `${strings.locationDenied}` : ''}
       </p>
     </div>
   );

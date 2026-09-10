@@ -162,6 +162,7 @@ export default function App() {
     const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.answer);
     return last?.answer ?? null;
   }, [messages]);
+  const alertCount = lastAnswer && lastAnswer.state !== 'SAFE' ? 1 : 0;
 
   // Live one-line sea summary for the area card, from the latest answer.
   const seaLine = useMemo(() => {
@@ -322,7 +323,7 @@ export default function App() {
           strings={strings}
           tab={tab}
           onTab={setTab}
-          alertCount={2}
+          alertCount={alertCount}
         />
         {mapView && (
           <MapOverlay

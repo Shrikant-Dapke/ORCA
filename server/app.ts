@@ -4,6 +4,7 @@ import { defaultDeps, orchestrate, type OrchestratorDeps } from './orchestrator.
 import { ProviderError, isLiveSource } from './providers/types.js';
 import { isLiveAdvisorySource } from './safety/types.js';
 import { isLiveEcosystemSource } from './ecosystem/types.js';
+import { mosdacConfigured } from './satellite/mosdac.js';
 
 export const API_VERSION = '1.0.0';
 const MAX_MESSAGE = 500;
@@ -101,6 +102,8 @@ export function createApp(deps: OrchestratorDeps = defaultDeps()): express.Expre
       ecosystemLive: isLiveEcosystemSource(deps.ecosystem.ecosystemSource),
       ecosystemDataset: deps.ecosystem.dataset,
       pfzSource: deps.pfz.pfzSource,
+      // MOSDAC needs SSO credentials; without them it is honestly unavailable.
+      mosdac: mosdacConfigured() ? 'configured' : 'unavailable',
     });
   });
 

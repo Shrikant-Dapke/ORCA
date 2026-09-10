@@ -131,10 +131,13 @@ export function buildExplanation(input: {
     wind ? tr(locale, 'ex.safe.wind', { x: wind }) : null,
     sky ? tr(locale, 'ex.safe.sky', { x: sky.toLowerCase() }) : null,
   ].filter((x): x is string => x !== null);
+  // No advisory feed (hazard unknown) means "no warning ON RECORD" — never
+  // claim checked warnings that were never checked.
+  const hazardUnknown = fused.assessments['hazard'] === 'unknown';
   const base =
     calm.length > 0
-      ? `${cap(calm.join(', '))}${tr(locale, 'ex.safe.base')}`
-      : tr(locale, 'ex.safe.fallback');
+      ? `${cap(calm.join(', '))}${tr(locale, hazardUnknown ? 'ex.safe.baseUnknown' : 'ex.safe.base')}`
+      : tr(locale, hazardUnknown ? 'ex.safe.fallbackUnknown' : 'ex.safe.fallback');
   const safeText = guidance ? `${base} ${guidance}` : base;
   return `${safeText}${opportunity()}`;
 }

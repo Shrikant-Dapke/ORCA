@@ -64,7 +64,7 @@ export function detectIntent(message: string): DetectedIntent {
   if (/(danger|storm|cyclone|warning|alert|nearby|near me)/.test(q)) topic = 'danger';
   else if (/(safer|where.*fish|which side|location|place|spot|area)/.test(q)) topic = 'spot';
   else if (/(route|navigate|navigation|reach|safest way|get there|go there)/.test(q)) topic = 'route';
-  else if (/(pfz|fishing zone|zones|where should i fish|best fishing|show.*fish)/.test(q)) topic = 'zone';
+  else if (/(pfz|fishing zones?|where should i fish|best fishing|show.*fish|\bzone\b)/.test(q)) topic = 'zone';
   else if (/(wind|gust|stormy|wave)/.test(q)) topic = 'wind';
   else if (/(today|now|right now|sea|rain|cloud|weather)/.test(q)) topic = 'sea';
 

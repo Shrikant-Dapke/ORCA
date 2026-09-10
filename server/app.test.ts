@@ -148,6 +148,7 @@ describe('GET /api/health', () => {
       ecosystemLive: boolean;
       ecosystemDataset: string;
       pfzSource: string;
+      mosdac: string;
     };
     expect(json.status).toBe('ok');
     expect(json.live).toBe(false);
@@ -158,6 +159,7 @@ describe('GET /api/health', () => {
     expect(json.ecosystemLive).toBe(false);
     expect(json.ecosystemDataset).toBe('demo');
     expect(json.pfzSource).toBe('demo');
+    expect(json.mosdac).toBe('unavailable');
   });
 
   it('reports live marine + no advisories for the open-meteo default pairing', async () => {

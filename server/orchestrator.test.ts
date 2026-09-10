@@ -15,6 +15,14 @@ describe('detectIntent', () => {
   it('detects tomorrow timeframe', () => {
     expect(detectIntent('Can I go fishing tomorrow morning?').timeframe).toBe('tomorrow');
   });
+  it('routes zone questions (incl. singular zone follow-ups)', () => {
+    expect(detectIntent('Where should I fish today?').topic).toBe('spot');
+    expect(detectIntent('Show me the nearest PFZ.').topic).toBe('zone');
+    expect(detectIntent('Why this zone?').topic).toBe('zone');
+  });
+  it('routes navigation questions', () => {
+    expect(detectIntent('Show me the safest route to that zone.').topic).toBe('route');
+  });
 });
 
 describe('orchestrate (demo provider + deterministic reasoning)', () => {

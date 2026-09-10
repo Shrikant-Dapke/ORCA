@@ -76,6 +76,14 @@ const en = {
   routeTitle: 'Suggested route',
   closeMap: 'Close',
   demoMapNote: 'Demo waters — not for navigation',
+  mapTilesDown: 'Map background unavailable — positions shown without it',
+  askSeaPrompt: 'Ask ORCA about the sea to see live conditions here.',
+  noAlertsTitle: 'No active alerts',
+  noAlertsBody: 'Nothing on record right now. Ask ORCA before you leave.',
+  tipReturnTitle: 'Return before noon',
+  tipReturnBody: 'Winds often rise in the afternoon. Plan a morning return.',
+  tipSkyTitle: 'Watch the sky',
+  tipSkyBody: 'Dark clouds or sudden wind change mean turn back early.',
 };
 
 export type Strings = typeof en;
@@ -137,6 +145,14 @@ const hi: Strings = {
   routeTitle: 'सुझाया रास्ता',
   closeMap: 'बंद करें',
   demoMapNote: 'डेमो जलक्षेत्र — नेविगेशन के लिए नहीं',
+  mapTilesDown: 'नक्शे की पृष्ठभूमि उपलब्ध नहीं — स्थितियां बिना उसके दिख रही हैं',
+  askSeaPrompt: 'यहां लाइव स्थिति देखने के लिए ORCA से समुद्र के बारे में पूछें।',
+  noAlertsTitle: 'कोई सक्रिय चेतावनी नहीं',
+  noAlertsBody: 'अभी कुछ दर्ज नहीं है। निकलने से पहले ORCA से पूछें।',
+  tipReturnTitle: 'दोपहर से पहले लौटें',
+  tipReturnBody: 'दोपहर में अक्सर हवाएं तेज़ होती हैं। सुबह लौटने की योजना बनाएं।',
+  tipSkyTitle: 'आसमान पर नज़र रखें',
+  tipSkyBody: 'काले बादल या अचानक हवा बदले तो जल्दी वापस मुड़ें।',
 };
 
 const mr: Strings = {
@@ -196,6 +212,14 @@ const mr: Strings = {
   routeTitle: 'सुचवलेला रस्ता',
   closeMap: 'बंद करा',
   demoMapNote: 'डेमो पाणी — मार्गदर्शनासाठी नाही',
+  mapTilesDown: 'नकाशाची पार्श्वभूमी उपलब्ध नाही — स्थाने तशीच दाखवली आहेत',
+  askSeaPrompt: 'थेट परिस्थिती पाहण्यासाठी ORCA ला समुद्राबद्दल विचारा.',
+  noAlertsTitle: 'सक्रिय इशारे नाहीत',
+  noAlertsBody: 'सध्या काहीही नोंद नाही. निघण्यापूर्वी ORCA ला विचारा.',
+  tipReturnTitle: 'दुपारपूर्वी परता',
+  tipReturnBody: 'दुपारी वारे सहसा वाढतात. सकाळी परतण्याचे नियोजन करा.',
+  tipSkyTitle: 'आकाशावर लक्ष ठेवा',
+  tipSkyBody: 'काळे ढग किंवा अचानक वारा बदलला तर लवकर मागे फिरा.',
 };
 
 export function getStrings(locale: Locale): Strings {

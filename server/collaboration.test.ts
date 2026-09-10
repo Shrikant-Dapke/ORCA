@@ -74,8 +74,7 @@ describe('collaborative execution', () => {
     expect(trace.guardrailRaised || response.status === 'danger').toBe(true);
   });
 
-  it('selects the safety bench for every intent, plus ecosystem for planning questions', () => {
-    for (const topic of ['sea', 'wind', 'danger'] as const) {
+  it('selects the safety bench for every intent, plus ecosystem for planning questions', () => {    for (const topic of ['sea', 'wind', 'danger'] as const) {
       const names = selectAgents(topic, AGENTS).map((a) => a.name).sort();
       expect(names).toEqual(['hazard', 'location', 'sea', 'weather']);
     }
@@ -416,5 +415,24 @@ describe('multilingual responses', () => {
     );
     expect(response.locale).toBe('en');
     expect(response.headline).toBe('SAFE TO GO');
+  });
+});
+
+describe('honesty wording', () => {
+  it('says "on record" rather than claiming checked warnings with no feed', async () => {
+    const { response } = await orchestrateWithTrace(
+      { message: 'How is the sea?', location: 'X' },
+      {
+        provider: calmLiveMarine,
+        reasoning: new DeterministicReasoningEngine(),
+        safety: new NullSafetyProvider(),
+        ecosystem: new NullEcosystem(),
+        pfz: new NullPfz(),
+        agents: AGENTS,
+      },
+    );
+    expect(response.status).toBe('safe');
+    expect(response.explanation).toContain('on record');
+    expect(response.explanation).not.toContain('no active marine warning');
   });
 });
