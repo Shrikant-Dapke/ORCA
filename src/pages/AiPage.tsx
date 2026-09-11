@@ -9,6 +9,15 @@ import { Composer, RouteCard, SafetyCard, ZoneCard } from '../components/cards';
 let idCounter = 0;
 const nid = () => `m${Date.now()}_${idCounter++}`;
 
+function newSessionId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  } catch {
+    /* fall through */
+  }
+  return `s-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
 /** ORCA AI: the real conversational interface over POST /api/chat. */
 export default function AiPage({ initialQuery }: { initialQuery?: string }) {
   const { strings, locale, area, coords } = useApp();
@@ -18,6 +27,9 @@ export default function AiPage({ initialQuery }: { initialQuery?: string }) {
   const [voiceFallback, setVoiceFallback] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [, setLiveData] = useState(false);
+  // Opaque server-side conversation id (multi-turn memory). Rotated only
+  // when the user starts a new chat via the header button (remount key).
+  const [sessionId, setSessionId] = useState<string>(() => newSessionId());
   const scrollRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef<string | null>(null);
 
@@ -36,6 +48,7 @@ export default function AiPage({ initialQuery }: { initialQuery?: string }) {
         const answer = await sendChat(q, area, {
           ...(coords ? { coordinates: coords } : {}),
           locale,
+          sessionId,
         });
         setApiError(null);
         setLiveData(answer.meta?.live === true);
@@ -51,7 +64,7 @@ export default function AiPage({ initialQuery }: { initialQuery?: string }) {
       setBusy(false);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [busy, area, coords, locale],
+    [busy, area, coords, locale, sessionId],
   );
 
   // Landing deep-links (?q=...) send once.
@@ -87,8 +100,26 @@ export default function AiPage({ initialQuery }: { initialQuery?: string }) {
 
   const showGreeting = useMemo(() => messages.length === 0 && !busy, [messages, busy]);
 
+  const newConversation = useCallback(() => {
+    setMessages([]);
+    setInput('');
+    setApiError(null);
+    setSessionId(newSessionId());
+  }, []);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {!showGreeting && (
+        <div className="mx-auto flex w-full max-w-[640px] justify-end px-4 pt-2">
+          <button
+            onClick={newConversation}
+            className="flex items-center gap-1.5 rounded-full bg-surface-lowest px-3.5 py-2 text-[12px] font-bold text-primary shadow-sm transition hover:bg-surface-container active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            {strings.newChat}
+          </button>
+        </div>
+      )}
       <div ref={scrollRef} className="chat-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-2 pt-3">
         <div className="mx-auto max-w-[640px] space-y-3">
           {showGreeting && (
@@ -139,6 +170,11 @@ export default function AiPage({ initialQuery }: { initialQuery?: string }) {
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
+                  {m.answer?.message && (
+                    <div className="msg-in mb-2 max-w-[95%] rounded-2xl rounded-tl-md bg-surface-lowest px-4 py-3 text-[14.5px] leading-relaxed text-on-surface shadow-md">
+                      {m.answer.message}
+                    </div>
+                  )}
                   {m.answer && (
                     <SafetyCard
                       answer={m.answer}

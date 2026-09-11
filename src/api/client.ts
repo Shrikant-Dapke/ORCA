@@ -83,6 +83,7 @@ export function toOrcaAnswer(res: ORCAResponse): OrcaAnswer {
     meta: res?.meta,
     zones: Array.isArray(res?.zones) ? res.zones : undefined,
     route: res?.route && typeof res.route === 'object' ? res.route : undefined,
+    message: typeof res?.message === 'string' && res.message.trim() ? res.message : undefined,
   };
 }
 
@@ -94,6 +95,8 @@ export interface SendChatOptions {
   coordinates?: Coordinates;
   /** UI language for the response (server may auto-detect from script). */
   locale?: ResponseLocale;
+  /** Opaque conversation id for server-side multi-turn memory. */
+  sessionId?: string;
 }
 
 export async function sendChat(
@@ -127,6 +130,7 @@ export async function postChatRaw(
           location,
           ...(opts.coordinates ? { coordinates: opts.coordinates } : {}),
           ...(opts.locale ? { locale: opts.locale } : {}),
+          ...(opts.sessionId ? { sessionId: opts.sessionId } : {}),
         }),
         signal: controller.signal,
       });

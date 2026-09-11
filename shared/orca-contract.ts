@@ -64,6 +64,14 @@ export interface ORCAResponse {
   zones?: FishingZone[];
   /** Calculated safe-risk route, when the question asks how to reach a zone. */
   route?: RouteInfo;
+  /** Echoed conversation session id (client-generated, opaque). */
+  sessionId?: string;
+  /**
+   * Conversational LLM reply, present only when model synthesis succeeded
+   * and passed validation. The structured fields above (status, headline,
+   * conditions, zones, route, explanation) always stay deterministic.
+   */
+  message?: string;
 }
 
 /** Waypoint on a calculated route. Never official navigation. */
@@ -106,6 +114,7 @@ export interface ChatRequestBody {
   location?: unknown;
   coordinates?: unknown;
   locale?: unknown;
+  sessionId?: unknown;
 }
 
 /** Validated request handed to the orchestrator. */
@@ -122,6 +131,8 @@ export interface ChatRequest {
   coordinates?: Coordinates;
   /** Response language. UI locale default; Devanagari input auto-detects. */
   locale?: ResponseLocale;
+  /** Opaque client-generated conversation id (validated shape only). */
+  sessionId?: string;
 }
 
 export interface ApiErrorBody {

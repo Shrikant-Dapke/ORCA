@@ -15,7 +15,9 @@ import { isLiveSource } from './providers/types.js';
 import { providerFromEnv, safetyFromEnv } from './providers/select.js';
 import { ecosystemFromEnv } from './ecosystem/select.js';
 import { pfzFromEnv } from './pfz/select.js';
+import { llmFromEnv } from './llm/select.js';
 import type { MarineEcosystemProvider } from './ecosystem/types.js';
+import type { ResolvedLLM } from './llm/select.js';
 import type { PfzProvider } from './pfz/providers.js';
 import { resolvePosition } from './location/areas.js';
 import type { MarineSafetyProvider } from './safety/types.js';
@@ -34,6 +36,8 @@ export interface OrchestratorDeps {
   safety: MarineSafetyProvider;
   ecosystem: MarineEcosystemProvider;
   pfz: PfzProvider;
+  /** Optional LLM synthesis layer. Absent = deterministic only (default). */
+  llm?: ResolvedLLM | null;
   /** Override to register future agents (e.g. satellite). Defaults to the MVP set. */
   agents?: OrcaAgent[];
 }
@@ -47,6 +51,7 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): OrchestratorD
     safety: safetyFromEnv(env, provider.dataSource),
     ecosystem: ecosystemFromEnv(env, provider.dataSource),
     pfz: pfzFromEnv(env, provider.dataSource),
+    llm: llmFromEnv(env),
     agents: [new SeaAgent(), new WeatherAgent(), new HazardAgent(), new LocationAgent(), new EcosystemAgent(), new GeoAgent(), new RouteAgent()],
   };
 }

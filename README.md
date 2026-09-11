@@ -123,6 +123,12 @@ server/
   safety/demoSafety.ts    # scripted demo advisories (labeled demo, never live)
   safety/incois.ts        # INCOIS research findings + honest stub (no public advisory API)
   reasoning/thresholds.ts # the ONLY place safety numbers live
+  llm/types.ts            # LLMProvider abstraction (agents never import this)
+  llm/gemini.ts           # Google Gemini adapter, plain fetch, no SDK
+  llm/loop.ts             # evidence-grounded chat loop + guardrail validation
+  llm/tools.ts            # real backend tools for the model (no fake tools)
+  llm/conversation.ts     # in-memory sessions (TTL, caps, no GPS stored)
+  llm/select.ts           # ORCA_LLM / MODEL_* env selection (default off)
   ecosystem/types.ts      # MarineEcosystemProvider + EcosystemReading + NullEcosystem
   ecosystem/incoisEcosystem.ts  # LIVE INCOIS ERDDAP SST with freshness gate (chl: none current)
   ecosystem/demoEcosystem.ts    # scripted demo SST/chlorophyll (labeled demo)
@@ -211,6 +217,32 @@ deterministic demo provider (labeled demo) or nothing. MOSDAC needs SSO
 credentials (absent) — stub only. Route math is ORCA's own and labeled
 "not official navigation". Geo has no authoritative polygons — reported,
 never invented.
+
+## Runtime LLM (optional)
+
+ORCA answers deterministically out of the box. For conversational AI, set:
+
+```bash
+ORCA_LLM=on
+ORCA_MODEL_API_KEY=  (fallback key source; GEMINI_API_KEY takes precedence)
+# ORCA_MODEL_NAME=gemini-3.6-flash
+# ORCA_MODEL_TIMEOUT_MS=15000
+```
+
+Flow: deterministic pipeline first (verdict + evidence, always) → Gemini
+synthesizes the reply grounded ONLY in that evidence → status equality is
+validated → any failure falls back to the deterministic answer (still 200).
+The model can call real backend tools (`get_safety_status`,
+`get_sea_conditions`, `get_fishing_zones`, `calculate_route`, `get_alerts`)
+for follow-ups; multi-turn memory lives in server sessions keyed by the
+client `sessionId` (TTL + caps, no GPS stored). The deterministic engine
+stays final authority — a mismatched model verdict is discarded, never
+applied. `/api/health` reports `llm: {enabled, provider, model}` (never the
+key). Without a key the app behaves exactly as before. Free-tier quotas are small
+(e.g. tens of requests/day on some models — one chat turn costs several
+calls), so a rate-limit circuit breaker cools the provider down after a 429
+(honoring the server's retry delay) instead of hammering it; every cooled
+turn still returns the full deterministic answer.
 
 ## Conventions for this MVP
 

@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from 'express';
 import type { ApiErrorBody, ChatRequest, Coordinates, ResponseLocale } from '../shared/orca-contract.js';
 import { defaultDeps, orchestrate, type OrchestratorDeps } from './orchestrator.js';
+import { runLlmChat } from './llm/loop.js';
 import { ProviderError, isLiveSource } from './providers/types.js';
 import { isLiveAdvisorySource } from './safety/types.js';
 import { isLiveEcosystemSource } from './ecosystem/types.js';
@@ -52,11 +53,12 @@ export function validateChatBody(body: unknown): ChatRequest {
   if (!body || typeof body !== 'object') {
     throw new ValidationError('Request body must be a JSON object.');
   }
-  const { message, location, coordinates, locale } = body as {
+  const { message, location, coordinates, locale, sessionId } = body as {
     message?: unknown;
     location?: unknown;
     coordinates?: unknown;
     locale?: unknown;
+    sessionId?: unknown;
   };
 
   if (typeof message !== 'string' || message.trim().length === 0) {
@@ -78,11 +80,17 @@ export function validateChatBody(body: unknown): ChatRequest {
   if (locale !== undefined && cleanLocale === undefined) {
     throw new ValidationError('"locale" must be one of "en", "hi", "mr".');
   }
+  const cleanSession =
+    typeof sessionId === 'string' && /^[A-Za-z0-9-]{1,64}$/.test(sessionId) ? sessionId : undefined;
+  if (sessionId !== undefined && cleanSession === undefined) {
+    throw new ValidationError('"sessionId" must be a 1-64 character alphanumeric id.');
+  }
   return {
     message: message.trim(),
     location: cleanLocation || DEFAULT_LOCATION,
     ...(fix ? { coordinates: fix } : {}),
     ...(cleanLocale ? { locale: cleanLocale } : {}),
+    ...(cleanSession ? { sessionId: cleanSession } : {}),
   };
 }
 
@@ -104,6 +112,9 @@ export function createApp(deps: OrchestratorDeps = defaultDeps()): express.Expre
       pfzSource: deps.pfz.pfzSource,
       // MOSDAC needs SSO credentials; without them it is honestly unavailable.
       mosdac: mosdacConfigured() ? 'configured' : 'unavailable',
+      llm: deps.llm
+        ? { enabled: true, provider: deps.llm.provider.name, model: deps.llm.model }
+        : { enabled: false, provider: 'none', model: 'deterministic' },
     });
   });
 
@@ -119,7 +130,9 @@ export function createApp(deps: OrchestratorDeps = defaultDeps()): express.Expre
     }
 
     try {
-      const answer = await orchestrate(chat, deps);
+      // LLM synthesis when configured; otherwise the deterministic pipeline.
+      // LLM failures fall back to deterministic inside runLlmChat (still 200).
+      const answer = deps.llm ? await runLlmChat(chat, deps) : await orchestrate(chat, deps);
       res.json(answer);
     } catch (err) {
       if (err instanceof ProviderError) {
@@ -138,6 +151,41 @@ export function createApp(deps: OrchestratorDeps = defaultDeps()): express.Expre
       // eslint-disable-next-line no-console
       console.error(`[orca] internal error: ${err instanceof Error ? err.stack ?? err.message : err}`);
       res.status(500).json(errorBody('INTERNAL_ERROR', 'Something went wrong. Please try again.'));
+    }
+  });
+
+  // Connectivity probe for the runtime LLM. Always honest: reports whether
+  // the model is configured AND answers a live ping. Never exposes the key.
+  // Registered before the /api catch-all below.
+  app.get('/api/llm/ping', async (_req: Request, res: Response) => {
+    if (!deps.llm) {
+      res.json({ ok: false, enabled: false, reason: 'LLM not configured (ORCA_LLM=on with GEMINI_API_KEY required).' });
+      return;
+    }
+    const started = Date.now();
+    try {
+      const reply = await deps.llm.provider.chat({
+        system: 'Reply with exactly: OK',
+        messages: [{ role: 'user', text: 'ping' }],
+        maxTokens: 10,
+        temperature: 0,
+      });
+      res.json({
+        ok: reply.text.trim().length > 0,
+        enabled: true,
+        provider: deps.llm.provider.name,
+        model: deps.llm.model,
+        latencyMs: Date.now() - started,
+        sample: reply.text.trim().slice(0, 80),
+      });
+    } catch (err) {
+      res.json({
+        ok: false,
+        enabled: true,
+        provider: deps.llm.provider.name,
+        model: deps.llm.model,
+        reason: err instanceof Error ? err.message : String(err),
+      });
     }
   });
 

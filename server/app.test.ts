@@ -343,4 +343,52 @@ describe('provider selection on the wire', () => {
       await close();
     }
   });
+
+  it('uses LLM synthesis when configured, echoes session, reports health', async () => {
+    const { base: llmBase, close } = await startApp({
+      ...testDeps(new DemoMarineProvider()),
+      llm: {
+        provider: {
+          name: 'fake',
+          chat: async () => ({
+            text: JSON.stringify({ reply: 'Hello! Ask me about the sea.', status: 'safe' }),
+            toolCalls: [],
+          }),
+        },
+        model: 'fake-model',
+        configured: true,
+      },
+    });
+    try {
+      const res = await fetch(`${llmBase}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hi', sessionId: 'sess-9' }),
+      });
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as ORCAResponse;
+      expect(json.message).toBe('Hello! Ask me about the sea.');
+      expect(json.explanation).toContain('calm');
+      expect(json.sessionId).toBe('sess-9');
+      const health = (await (await fetch(`${llmBase}/api/health`)).json()) as {
+        llm: { enabled: boolean; provider: string; model: string };
+      };
+      expect(health.llm).toEqual({ enabled: true, provider: 'fake', model: 'fake-model' });
+    } finally {
+      await close();
+    }
+  });
+
+  it('rejects malformed session ids with 400', async () => {
+    const { status } = await postChat({ message: 'Hi', sessionId: 'bad id!!' });
+    expect(status).toBe(400);
+  });
+
+  it('reports LLM ping as not-configured without a key', async () => {
+    const res = await fetch(`${base}/api/llm/ping`);
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean; enabled: boolean };
+    expect(json.ok).toBe(false);
+    expect(json.enabled).toBe(false);
+  });
 });

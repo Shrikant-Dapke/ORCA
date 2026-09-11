@@ -43,6 +43,11 @@ describe('toOrcaAnswer (wire contract → UI model)', () => {
     expect(a.meta?.dataSource).toBe('open-meteo');
   });
 
+  it('passes the conversational message through, absent when missing', () => {
+    expect(toOrcaAnswer(wire({ message: 'Hello, friend!' })).message).toBe('Hello, friend!');
+    expect(toOrcaAnswer(wire({})).message).toBeUndefined();
+  });
+
   it('falls back safely on partial payloads instead of crashing render', () => {
     const a = toOrcaAnswer({ status: 'danger' } as ORCAResponse);
     expect(a.state).toBe('DANGER');

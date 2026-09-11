@@ -57,10 +57,12 @@ export function SafetyCard(props: { answer: OrcaAnswer; area: string; strings: S
   return (
     <div className="rounded-2xl rounded-tl-md bg-surface-lowest p-4 shadow-md">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded-md bg-secondary-fixed px-2 py-0.5 text-[11px] font-semibold text-on-secondary-fixed">
-          <Icon name="check_circle" size={14} className="text-tertiary" />
-          {live ? 'Open-Meteo forecast' : 'Demo data'}
-        </span>
+        {live && (
+          <span className="inline-flex items-center gap-1 rounded-md bg-secondary-fixed px-2 py-0.5 text-[11px] font-semibold text-on-secondary-fixed">
+            <Icon name="check_circle" size={14} className="text-tertiary" />
+            Open-Meteo forecast
+          </span>
+        )}
         <span className="inline-flex items-center gap-1 rounded-md bg-secondary-fixed px-2 py-0.5 text-[11px] font-semibold text-on-secondary-fixed">
           <Icon name="check_circle" size={14} className="text-tertiary" />
           {gps ? 'GPS position' : 'Selected area'}
@@ -177,9 +179,11 @@ export function ZoneCard(props: {
             {first.potential === 'good' ? '●' : '◐'} {first.name}
           </span>
         </div>
-        <p className="mt-1 text-[12px] text-on-surface-variant">
-          {first.live ? strings.liveNote : strings.demoNote} · {first.source}
-        </p>
+        {first.live && (
+          <p className="mt-1 text-[12px] text-on-surface-variant">
+            {strings.liveNote} · {first.source}
+          </p>
+        )}
         {rest.length > 0 && (
           <p className="mt-1 text-[12px] text-on-surface-variant">
             +{rest.length} {rest[0].distanceKm} km {rest[0].bearingCompass}

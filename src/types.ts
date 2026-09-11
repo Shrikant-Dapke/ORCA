@@ -23,6 +23,8 @@ export interface OrcaAnswer {
   /** Candidate zones / calculated route (present for where-to-go questions). */
   zones?: FishingZone[];
   route?: RouteInfo;
+  /** Conversational model reply (validated). Absent on deterministic fallback. */
+  message?: string;
 }
 
 export interface ChatMessage {
