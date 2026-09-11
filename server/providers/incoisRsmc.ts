@@ -8,7 +8,7 @@ import { ProviderError } from './types.js';
 export const INCOIS_RSMC_LISTING = 'https://www.incois.gov.in/oceanservices/rsmc_download.jsp';
 export const INCOIS_RSMC_BASE = 'https://www.incois.gov.in/thredds/fileServer/osf/ww3';
 export const INCOIS_RSMC_TIMEOUT_MS = 30000;
-export const INCOIS_RSMC_CACHE_TTL_MS = 20 * 60 * 1000;
+export const INCOIS_RSMC_CACHE_TTL_MS = 20 * 60 * 1000;\nexport const INCOIS_RSMC_DEFAULT_MAX_AGE_HOURS = 72;
 
 type Var = { name: string; dimensions: number[]; attributes?: { name: string; value: unknown }[] };
 
@@ -56,13 +56,13 @@ export class IncoisRsmcMarineProvider implements MarineDataProvider {
   private readonly fetchFn: typeof fetch;
   private readonly timeout: number;
   private readonly ttl: number;
-  private readonly clock: () => number;
+  private readonly clock: () => number;\n  private readonly maxAgeHours: number;
   private cache: { at: number; file: string; reader: NetCDFReader } | null = null;
   private snapshots = new Map<string, { at: number; data: any }>();
 
-  constructor(o: { fetchFn?: typeof fetch; timeoutMs?: number; cacheTtlMs?: number; clock?: () => number } = {}) {
+  constructor(o: { fetchFn?: typeof fetch; timeoutMs?: number; cacheTtlMs?: number; clock?: () => number; maxAgeHours?: number } = {}) {
     this.fetchFn = o.fetchFn ?? fetch; this.timeout = o.timeoutMs ?? INCOIS_RSMC_TIMEOUT_MS;
-    this.ttl = o.cacheTtlMs ?? INCOIS_RSMC_CACHE_TTL_MS; this.clock = o.clock ?? Date.now;
+    this.ttl = o.cacheTtlMs ?? INCOIS_RSMC_CACHE_TTL_MS; this.clock = o.clock ?? Date.now;\n    const envAge = Number(process.env.ORCA_INCOIS_RSMC_MAX_AGE_HOURS);\n    this.maxAgeHours = o.maxAgeHours ?? (Number.isFinite(envAge) && envAge > 0 ? envAge : INCOIS_RSMC_DEFAULT_MAX_AGE_HOURS);
   }
   private async get(url: string) {
     const c = new AbortController(); const t = setTimeout(() => c.abort(), this.timeout);
