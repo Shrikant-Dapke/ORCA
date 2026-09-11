@@ -28,7 +28,7 @@ import type { AgentContext, AgentResult, EvidenceItem, OrcaAgent } from './types
 /** Friendly provenance label. Demo sources are always explicit. */
 function providerSource(ctx: AgentContext): { label: string; live: boolean } {
   const live = ctx.provider.dataSource !== 'demo';
-  if (/open-?meteo/i.test(ctx.provider.name)) return { label: 'Open-Meteo', live };
+  if (/incoisrsmc/i.test(ctx.provider.name)) return { label: 'INCOIS RSMC / WaveWatch III', live };\n  if (/open-?meteo/i.test(ctx.provider.name)) return { label: 'Open-Meteo', live };
   if (/demo/i.test(ctx.provider.name)) return { label: 'Demo data', live: false };
   return { label: ctx.provider.name, live };
 }
